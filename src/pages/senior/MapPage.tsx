@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { MapPin, Navigation, Filter } from 'lucide-react';
+import { MapPin, Navigation, Filter, Search } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import MapView from '../../components/MapView';
 import Button from '../../components/ui/Button';
@@ -22,6 +22,19 @@ export default function MapPage() {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [center, setCenter] = useState<[number, number]>([-33.87, 151.21]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchSubmitted, setSearchSubmitted] = useState(false);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+    setSearchSubmitted(true);
+  };
+
+  const handleSearchReset = () => {
+    setSearchQuery('');
+    setSearchSubmitted(false);
+  };
 
   useEffect(() => {
     supabase
@@ -60,6 +73,34 @@ export default function MapPage() {
           <Navigation className="w-5 h-5 mr-2" /> Near Me
         </Button>
       </div>
+
+      <form onSubmit={handleSearch} className="flex gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => { setSearchQuery(e.target.value); setSearchSubmitted(false); }}
+            placeholder="Search by suburb or postcode..."
+            className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 bg-white"
+          />
+        </div>
+        <Button type="submit" size="lg">
+          Search
+        </Button>
+        {searchSubmitted && (
+          <Button type="button" variant="secondary" size="lg" onClick={handleSearchReset}>
+            Clear
+          </Button>
+        )}
+      </form>
+
+      {searchSubmitted && (
+        <div className="flex items-center gap-2 px-4 py-3 bg-teal-50 border border-teal-200 rounded-xl text-sm text-teal-800">
+          <MapPin className="w-4 h-4 flex-shrink-0" />
+          Showing results for <span className="font-semibold">"{searchQuery}"</span>
+        </div>
+      )}
 
       <div className="flex items-center gap-2 overflow-x-auto pb-2">
         <Filter className="w-4 h-4 text-gray-400 flex-shrink-0" />
