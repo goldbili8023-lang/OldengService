@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { Home, Phone, Pill, Map, HelpCircle, Settings, LogOut } from 'lucide-react';
+import { Home, Phone, Map, HelpCircle, Settings, LogOut } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useAccessibility } from '../contexts/AccessibilityContext';
@@ -9,7 +9,6 @@ import Button from '../components/ui/Button';
 const navItems = [
   { to: '/senior', icon: Home, label: 'Home', end: true },
   { to: '/senior/contacts', icon: Phone, label: 'Contacts', end: false },
-  { to: '/senior/medications', icon: Pill, label: 'Reminders', end: false },
   { to: '/senior/map', icon: Map, label: 'Map', end: false },
   { to: '/senior/help', icon: HelpCircle, label: 'Help', end: false },
 ];

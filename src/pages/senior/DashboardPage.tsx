@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Phone, Pill, Map, Dumbbell, HelpCircle,
-  Sun, CloudRain, CloudSnow, Cloud, AlertTriangle, CheckCircle2
+  Phone, Map, Dumbbell, HelpCircle,
+  Sun, CloudRain, CloudSnow, Cloud, AlertTriangle
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import Card from '../../components/ui/Card';
-import type { EmergencyContact, Medication, MedicationLog } from '../../types';
+import type { EmergencyContact } from '../../types';
 
 interface WeatherData {
   temp: number;
@@ -38,14 +38,11 @@ function getWeatherLabel(code: number) {
 export default function DashboardPage() {
   const { profile, user } = useAuth();
   const [primaryContact, setPrimaryContact] = useState<EmergencyContact | null>(null);
-  const [medications, setMedications] = useState<Medication[]>([]);
-  const [todayLogs, setTodayLogs] = useState<MedicationLog[]>([]);
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [severeWeather, setSevereWeather] = useState(false);
 
   useEffect(() => {
     if (!user) return;
-    const today = new Date().toISOString().split('T')[0];
 
     supabase
       .from('emergency_contacts')
@@ -54,20 +51,6 @@ export default function DashboardPage() {
       .eq('is_primary', true)
       .maybeSingle()
       .then(({ data }) => setPrimaryContact(data));
-
-    supabase
-      .from('medications')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('is_active', true)
-      .then(({ data }) => setMedications(data || []));
-
-    supabase
-      .from('medication_logs')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('taken_date', today)
-      .then(({ data }) => setTodayLogs(data || []));
 
     navigator.geolocation?.getCurrentPosition(
       pos => {
@@ -107,7 +90,6 @@ export default function DashboardPage() {
     );
   }, [user]);
 
-  const takenCount = todayLogs.filter(l => l.status === 'taken').length;
   const greeting = (() => {
     const h = new Date().getHours();
     if (h < 12) return 'Good morning';
@@ -138,51 +120,6 @@ export default function DashboardPage() {
             </div>
           </Card>
         )}
-
-        <Card>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-gray-900">Today's Medications</h3>
-            <Link to="/senior/medications" className="text-sm text-teal-600 hover:text-teal-700 font-medium">
-              View all
-            </Link>
-          </div>
-          {medications.length === 0 ? (
-            <p className="text-sm text-gray-500">No medications set up yet.</p>
-          ) : (
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                  takenCount === medications.length ? 'bg-emerald-100' : 'bg-teal-100'
-                }`}>
-                  {takenCount === medications.length
-                    ? <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                    : <Pill className="w-5 h-5 text-teal-600" />
-                  }
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">
-                    {takenCount} of {medications.length} taken
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    {takenCount === medications.length ? 'All done for today!' : 'Keep it up!'}
-                  </p>
-                </div>
-              </div>
-              {medications.slice(0, 3).map(med => {
-                const taken = todayLogs.some(l => l.medication_id === med.id && l.status === 'taken');
-                return (
-                  <div key={med.id} className="flex items-center justify-between py-2 border-t border-gray-100">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{med.medicine_name}</p>
-                      <p className="text-xs text-gray-500">{med.dosage} at {med.reminder_time}</p>
-                    </div>
-                    {taken && <CheckCircle2 className="w-5 h-5 text-emerald-500" />}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </Card>
 
         <Card>
           <h3 className="font-semibold text-gray-900 mb-4">Quick Call</h3>
