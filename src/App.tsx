@@ -20,9 +20,8 @@ import HeatMapPage from './pages/worker/HeatMapPage';
 import ReportsPage from './pages/worker/ReportsPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { loading } = useAuth();
   if (loading) return <LoadingSpinner fullScreen />;
-  if (!user) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }
 
@@ -34,14 +33,14 @@ function RoleRedirect() {
 }
 
 function AppRoutes() {
-  const { user, loading } = useAuth();
+  const { loading } = useAuth();
 
   if (loading) return <LoadingSpinner fullScreen />;
 
   return (
     <Routes>
-      <Route path="/login" element={user ? <RoleRedirect /> : <LoginPage />} />
-      <Route path="/register" element={user ? <RoleRedirect /> : <RegisterPage />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
 
       <Route path="/senior" element={<ProtectedRoute><SeniorLayout /></ProtectedRoute>}>
         <Route index element={<DashboardPage />} />
@@ -61,7 +60,7 @@ function AppRoutes() {
         <Route path="reports" element={<ReportsPage />} />
       </Route>
 
-      <Route path="*" element={user ? <RoleRedirect /> : <Navigate to="/login" replace />} />
+      <Route path="*" element={<Navigate to="/senior" replace />} />
     </Routes>
   );
 }
