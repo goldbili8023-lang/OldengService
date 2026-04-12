@@ -20,7 +20,7 @@ export default function MapPage() {
   const [locations, setLocations] = useState<ServiceLocation[]>([]);
   const [filtered, setFiltered] = useState<ServiceLocation[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [center, setCenter] = useState<[number, number]>([-33.87, 151.21]);
+  const [center, setCenter] = useState<[number, number] | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchSubmitted, setSearchSubmitted] = useState(false);

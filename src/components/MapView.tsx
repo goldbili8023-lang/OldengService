@@ -38,17 +38,41 @@ function RecenterMap({ lat, lng }: { lat: number; lng: number }) {
   return null;
 }
 
+function FitToLocations({ locations }: { locations: ServiceLocation[] }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (locations.length === 0) return;
+
+    if (locations.length === 1) {
+      map.setView([locations[0].latitude, locations[0].longitude], 13);
+      return;
+    }
+
+    const bounds = L.latLngBounds(locations.map(loc => [loc.latitude, loc.longitude]));
+    map.fitBounds(bounds, { padding: [40, 40] });
+  }, [locations, map]);
+
+  return null;
+}
+
 interface MapViewProps {
   locations: ServiceLocation[];
-  center?: [number, number];
+  center?: [number, number] | null;
   zoom?: number;
   className?: string;
 }
 
-export default function MapView({ locations, center = [-33.87, 151.21], zoom = 13, className = '' }: MapViewProps) {
+export default function MapView({ locations, center = null, zoom = 13, className = '' }: MapViewProps) {
+  const initialCenter: [number, number] = center ?? (
+    locations.length > 0
+      ? [locations[0].latitude, locations[0].longitude]
+      : [-37.8136, 144.9631]
+  );
+
   return (
     <MapContainer
-      center={center}
+      center={initialCenter}
       zoom={zoom}
       className={`w-full rounded-2xl overflow-hidden ${className}`}
       style={{ height: '100%', minHeight: '400px' }}
@@ -57,7 +81,7 @@ export default function MapView({ locations, center = [-33.87, 151.21], zoom = 1
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      <RecenterMap lat={center[0]} lng={center[1]} />
+      {center ? <RecenterMap lat={center[0]} lng={center[1]} /> : <FitToLocations locations={locations} />}
       {locations.map(loc => (
         <Marker key={loc.id} position={[loc.latitude, loc.longitude]} icon={createIcon(loc.category)}>
           <Popup maxWidth={280}>

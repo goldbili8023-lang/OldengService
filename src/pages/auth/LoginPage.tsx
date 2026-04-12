@@ -1,12 +1,21 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Heart, Shield } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import Button from '../../components/ui/Button';
 import FormInput from '../../components/ui/FormInput';
 
+type LoginLocationState = {
+  from?: {
+    pathname?: string;
+  };
+};
+
 export default function LoginPage() {
   const { signIn } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const redirectTo = (location.state as LoginLocationState | null)?.from?.pathname || '/senior';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -17,7 +26,11 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     const result = await signIn(email, password);
-    if (result.error) setError(result.error);
+    if (result.error) {
+      setError(result.error);
+    } else {
+      navigate(redirectTo, { replace: true });
+    }
     setLoading(false);
   };
 

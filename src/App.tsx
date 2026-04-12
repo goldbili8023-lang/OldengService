@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AccessibilityProvider } from './contexts/AccessibilityContext';
 import LoadingSpinner from './components/ui/LoadingSpinner';
@@ -20,16 +20,13 @@ import HeatMapPage from './pages/worker/HeatMapPage';
 import ReportsPage from './pages/worker/ReportsPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { loading } = useAuth();
-  if (loading) return <LoadingSpinner fullScreen />;
-  return <>{children}</>;
-}
+  const { loading, user } = useAuth();
+  const location = useLocation();
 
-function RoleRedirect() {
-  const { profile, loading } = useAuth();
   if (loading) return <LoadingSpinner fullScreen />;
-  if (profile?.role === 'worker') return <Navigate to="/worker" replace />;
-  return <Navigate to="/senior" replace />;
+  if (!user) return <Navigate to="/login" replace state={{ from: location }} />;
+
+  return <>{children}</>;
 }
 
 function AppRoutes() {

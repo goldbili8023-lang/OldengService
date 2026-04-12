@@ -67,18 +67,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [fetchProfile]);
 
   const signUp = async (email: string, password: string, name: string, role: 'senior' | 'worker') => {
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          name,
+          role,
+        },
+      },
+    });
+
     if (error) return { error: error.message };
-    if (data.user) {
-      const { error: profileError } = await supabase.from('user_profiles').insert({
-        id: data.user.id,
-        name,
-        role,
-      });
-      if (profileError) return { error: profileError.message };
-      const profile = await fetchProfile(data.user.id);
-      setState(prev => ({ ...prev, profile }));
+
+    const session = data.session;
+    if (session?.user) {
+      const profile = await fetchProfile(session.user.id);
+      setState(prev => ({
+        ...prev,
+        session,
+        user: session.user,
+        profile,
+      }));
     }
+
     return { error: null };
   };
 

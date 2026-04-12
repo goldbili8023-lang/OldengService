@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Plus, Pill, CheckCircle2, Circle, Clock, Pencil, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -20,6 +20,7 @@ export default function MedicationsPage() {
   const [medications, setMedications] = useState<Medication[]>([]);
   const [todayLogs, setTodayLogs] = useState<MedicationLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Medication | null>(null);
   const [form, setForm] = useState({
@@ -32,18 +33,37 @@ export default function MedicationsPage() {
 
   const today = new Date().toISOString().split('T')[0];
 
-  const fetchData = async () => {
-    if (!user) return;
+  const fetchData = useCallback(async () => {
+    if (!user) {
+      setMedications([]);
+      setTodayLogs([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
     const [medsRes, logsRes] = await Promise.all([
       supabase.from('medications').select('*').eq('user_id', user.id).eq('is_active', true).order('reminder_time'),
       supabase.from('medication_logs').select('*').eq('user_id', user.id).eq('taken_date', today),
     ]);
+
+    const fetchError = medsRes.error || logsRes.error;
+    if (fetchError) {
+      setError(fetchError.message);
+      setMedications([]);
+      setTodayLogs([]);
+      setLoading(false);
+      return;
+    }
+
     setMedications(medsRes.data || []);
     setTodayLogs(logsRes.data || []);
     setLoading(false);
-  };
+  }, [today, user]);
 
-  useEffect(() => { fetchData(); }, [user]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const openAdd = () => {
     setEditing(null);
@@ -111,6 +131,12 @@ export default function MedicationsPage() {
           <Plus className="w-5 h-5 mr-2" /> Add
         </Button>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          Could not load medications: {error}
+        </div>
+      )}
 
       {medications.length > 0 && (
         <Card className="bg-gradient-to-r from-teal-50 to-emerald-50 border-teal-200">

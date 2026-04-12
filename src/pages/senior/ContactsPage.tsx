@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Phone, Plus, Star, Pencil, Trash2, UserPlus } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -13,24 +13,41 @@ export default function ContactsPage() {
   const { user } = useAuth();
   const [contacts, setContacts] = useState<EmergencyContact[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [editing, setEditing] = useState<EmergencyContact | null>(null);
   const [form, setForm] = useState({ contact_name: '', relationship: '', phone_number: '', is_primary: false });
 
-  const fetchContacts = async () => {
-    if (!user) return;
-    const { data } = await supabase
+  const fetchContacts = useCallback(async () => {
+    if (!user) {
+      setContacts([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    const { data, error: contactsError } = await supabase
       .from('emergency_contacts')
       .select('*')
       .eq('user_id', user.id)
       .order('is_primary', { ascending: false })
       .order('created_at', { ascending: true });
+
+    if (contactsError) {
+      setError(contactsError.message);
+      setContacts([]);
+      setLoading(false);
+      return;
+    }
+
     setContacts(data || []);
     setLoading(false);
-  };
+  }, [user]);
 
-  useEffect(() => { fetchContacts(); }, [user]);
+  useEffect(() => { fetchContacts(); }, [fetchContacts]);
 
   const openAdd = () => {
     setEditing(null);
@@ -95,6 +112,12 @@ export default function ContactsPage() {
           <Plus className="w-5 h-5 mr-2" /> Add
         </Button>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          Could not load contacts: {error}
+        </div>
+      )}
 
       {contacts.length === 0 ? (
         <EmptyState
