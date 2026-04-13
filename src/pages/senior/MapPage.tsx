@@ -144,7 +144,63 @@ export default function MapPage() {
     };
   }, []);
 
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = { '': locations.length };
 
+    for (const location of locations) {
+      counts[location.category] = (counts[location.category] || 0) + 1;
+    }
+
+    return counts;
+  }, [locations]);
+
+  const visibleCategories = useMemo(
+    () => categories.filter(category => category.value === '' || (categoryCounts[category.value] || 0) > 0),
+    [categoryCounts],
+  );
+
+  const displayResult = useMemo<DisplayResult>(() => {
+    const categoryFiltered = selectedCategory
+      ? locations.filter(location => location.category === selectedCategory)
+      : locations;
+
+    const searchFiltered = activeSearch
+      ? categoryFiltered.filter(location => matchesSearch(location, activeSearch))
+      : categoryFiltered;
+
+    if (visibleMode === 'prompt') {
+      return {
+        visibleLocations: [],
+        totalBeforeCap: 0,
+        radiusKm: null,
+        capped: false,
+        expanded: false,
+      };
+    }
+
+    if (visibleMode === 'search') {
+      const visibleLocations = userLocation
+        ? [...searchFiltered].sort((a, b) => distanceKm(userLocation, a) - distanceKm(userLocation, b))
+        : searchFiltered;
+
+      return {
+        visibleLocations,
+        totalBeforeCap: visibleLocations.length,
+        radiusKm: null,
+        capped: false,
+        expanded: false,
+      };
+    }
+
+    if (!userLocation) {
+      return {
+        visibleLocations: [],
+        totalBeforeCap: 0,
+        radiusKm,
+        capped: false,
+        expanded: false,
+      };
+    }
 
     const sortedByDistance = [...searchFiltered].sort(
       (a, b) => distanceKm(userLocation, a) - distanceKm(userLocation, b),
