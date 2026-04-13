@@ -4,6 +4,16 @@ import { supabase } from '../../lib/supabase';
 import MapView from '../../components/MapView';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
+import {
+  buildSuburbIndex,
+  distanceKm,
+  findSuburbMatch,
+  findSuburbSuggestions,
+  rankTextMatches,
+  type Coordinates,
+  type RankedServiceMatch,
+  type SuburbIndexEntry,
+} from '../../lib/serviceSearch';
 import type { ServiceLocation } from '../../types';
 
 const categories = [
@@ -24,7 +34,16 @@ const EXPANDED_RADIUS_KM = 25;
 const MIN_NEARBY_RESULTS = 12;
 const MAX_VISIBLE_NEARBY = 80;
 
-type VisibleMode = 'prompt' | 'nearby' | 'search';
+type VisibleMode = 'prompt' | 'nearby' | 'suburb' | 'text';
+
+interface SearchAnchor {
+  label: string;
+  center: Coordinates;
+}
+
+type SearchSuggestion =
+  | { type: 'suburb'; entry: SuburbIndexEntry }
+  | { type: 'service'; match: RankedServiceMatch };
 
 interface DisplayResult {
   visibleLocations: ServiceLocation[];
@@ -32,30 +51,6 @@ interface DisplayResult {
   radiusKm: number | null;
   capped: boolean;
   expanded: boolean;
-}
-
-function distanceKm(origin: [number, number], location: ServiceLocation): number {
-  const earthRadiusKm = 6371;
-  const [originLat, originLng] = origin;
-  const latDelta = ((location.latitude - originLat) * Math.PI) / 180;
-  const lngDelta = ((location.longitude - originLng) * Math.PI) / 180;
-  const originLatRad = (originLat * Math.PI) / 180;
-  const locationLatRad = (location.latitude * Math.PI) / 180;
-  const a =
-    Math.sin(latDelta / 2) ** 2 +
-    Math.cos(originLatRad) * Math.cos(locationLatRad) * Math.sin(lngDelta / 2) ** 2;
-
-  return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-function matchesSearch(location: ServiceLocation, query: string): boolean {
-  const normalized = query.trim().toLowerCase();
-
-  if (!normalized) return true;
-
-  return [location.service_name, location.suburb, location.address]
-    .filter(Boolean)
-    .some(value => value.toLowerCase().includes(normalized));
 }
 
 function getStatusBadgeVariant(status: ServiceLocation['current_status']) {
@@ -81,6 +76,8 @@ export default function MapPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeSearch, setActiveSearch] = useState('');
+  const [searchAnchor, setSearchAnchor] = useState<SearchAnchor | null>(null);
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [statusMessage, setStatusMessage] = useState('Use your location or search to show nearby services.');
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -90,15 +87,29 @@ export default function MapPage() {
 
     if (!nextSearch) return;
 
-    setActiveSearch(nextSearch);
-    setVisibleMode('search');
+    const suburbMatch = findSuburbMatch(nextSearch, suburbIndex);
+    if (suburbMatch) {
+      setSearchQuery(suburbMatch.label);
+      setActiveSearch(suburbMatch.label);
+      setSearchAnchor({ label: suburbMatch.label, center: suburbMatch.center });
+      setVisibleMode('suburb');
+      setRadiusKm(NEARBY_RADIUS_KM);
+    } else {
+      setActiveSearch(nextSearch);
+      setSearchAnchor(null);
+      setVisibleMode('text');
+    }
+
     setSelectedLocation(null);
+    setSuggestionsOpen(false);
   };
 
   const handleSearchReset = () => {
     setSearchQuery('');
     setActiveSearch('');
+    setSearchAnchor(null);
     setSelectedLocation(null);
+    setSuggestionsOpen(false);
 
     if (userLocation) {
       setVisibleMode('nearby');
@@ -159,15 +170,31 @@ export default function MapPage() {
     [categoryCounts],
   );
 
-  const displayResult = useMemo<DisplayResult>(() => {
-    const categoryFiltered = selectedCategory
+  const categoryFilteredLocations = useMemo(
+    () => selectedCategory
       ? locations.filter(location => location.category === selectedCategory)
-      : locations;
+      : locations,
+    [locations, selectedCategory],
+  );
 
-    const searchFiltered = activeSearch
-      ? categoryFiltered.filter(location => matchesSearch(location, activeSearch))
-      : categoryFiltered;
+  const suburbIndex = useMemo(
+    () => buildSuburbIndex(categoryFilteredLocations),
+    [categoryFilteredLocations],
+  );
 
+  const searchSuggestions = useMemo<SearchSuggestion[]>(() => {
+    if (!suggestionsOpen || searchQuery.trim().length < 2) return [];
+
+    const suburbSuggestions: SearchSuggestion[] = findSuburbSuggestions(searchQuery, suburbIndex, 3)
+      .map(entry => ({ type: 'suburb', entry }));
+    const serviceSuggestions: SearchSuggestion[] = rankTextMatches(searchQuery, categoryFilteredLocations, userLocation)
+      .slice(0, 5)
+      .map(match => ({ type: 'service', match }));
+
+    return [...suburbSuggestions, ...serviceSuggestions].slice(0, 7);
+  }, [categoryFilteredLocations, searchQuery, suburbIndex, suggestionsOpen, userLocation]);
+
+  const displayResult = useMemo<DisplayResult>(() => {
     if (visibleMode === 'prompt') {
       return {
         visibleLocations: [],
@@ -178,10 +205,10 @@ export default function MapPage() {
       };
     }
 
-    if (visibleMode === 'search') {
-      const visibleLocations = userLocation
-        ? [...searchFiltered].sort((a, b) => distanceKm(userLocation, a) - distanceKm(userLocation, b))
-        : searchFiltered;
+    if (visibleMode === 'text') {
+      const visibleLocations = activeSearch
+        ? rankTextMatches(activeSearch, categoryFilteredLocations, userLocation).map(match => match.location)
+        : [];
 
       return {
         visibleLocations,
@@ -192,7 +219,9 @@ export default function MapPage() {
       };
     }
 
-    if (!userLocation) {
+    const origin = visibleMode === 'suburb' ? searchAnchor?.center ?? null : userLocation;
+
+    if (!origin) {
       return {
         visibleLocations: [],
         totalBeforeCap: 0,
@@ -202,16 +231,16 @@ export default function MapPage() {
       };
     }
 
-    const sortedByDistance = [...searchFiltered].sort(
-      (a, b) => distanceKm(userLocation, a) - distanceKm(userLocation, b),
+    const sortedByDistance = [...categoryFilteredLocations].sort(
+      (a, b) => distanceKm(origin, a) - distanceKm(origin, b),
     );
     let activeRadius = radiusKm ?? NEARBY_RADIUS_KM;
-    let withinRadius = sortedByDistance.filter(location => distanceKm(userLocation, location) <= activeRadius);
+    let withinRadius = sortedByDistance.filter(location => distanceKm(origin, location) <= activeRadius);
     let expanded = false;
 
     if (withinRadius.length < MIN_NEARBY_RESULTS && activeRadius < EXPANDED_RADIUS_KM) {
       activeRadius = EXPANDED_RADIUS_KM;
-      withinRadius = sortedByDistance.filter(location => distanceKm(userLocation, location) <= activeRadius);
+      withinRadius = sortedByDistance.filter(location => distanceKm(origin, location) <= activeRadius);
       expanded = true;
     }
 
@@ -222,7 +251,7 @@ export default function MapPage() {
       capped: withinRadius.length > MAX_VISIBLE_NEARBY,
       expanded,
     };
-  }, [activeSearch, locations, radiusKm, selectedCategory, userLocation, visibleMode]);
+  }, [activeSearch, categoryFilteredLocations, radiusKm, searchAnchor, userLocation, visibleMode]);
 
   useEffect(() => {
     if (!selectedLocation) return;
@@ -243,8 +272,28 @@ export default function MapPage() {
       return;
     }
 
-    if (visibleMode === 'search') {
+    if (visibleMode === 'text') {
       setStatusMessage(`${displayResult.visibleLocations.length} result${displayResult.visibleLocations.length === 1 ? '' : 's'} for "${activeSearch}".`);
+      return;
+    }
+
+    if (visibleMode === 'suburb') {
+      if (!searchAnchor) {
+        setStatusMessage('Search for a suburb to show nearby services.');
+        return;
+      }
+
+      if (displayResult.totalBeforeCap === 0) {
+        setStatusMessage(`No services found around ${searchAnchor.label} within ${displayResult.radiusKm ?? NEARBY_RADIUS_KM} km.`);
+        return;
+      }
+
+      if (displayResult.capped) {
+        setStatusMessage(`Showing nearest ${displayResult.visibleLocations.length} of ${displayResult.totalBeforeCap} services around ${searchAnchor.label} within ${displayResult.radiusKm} km.`);
+        return;
+      }
+
+      setStatusMessage(`Showing ${displayResult.visibleLocations.length} services around ${searchAnchor.label} within ${displayResult.radiusKm} km.`);
       return;
     }
 
@@ -277,6 +326,7 @@ export default function MapPage() {
     displayResult.totalBeforeCap,
     displayResult.visibleLocations.length,
     loading,
+    searchAnchor,
     userLocation,
     visibleMode,
   ]);
@@ -294,7 +344,9 @@ export default function MapPage() {
         setRadiusKm(NEARBY_RADIUS_KM);
         setActiveSearch('');
         setSearchQuery('');
+        setSearchAnchor(null);
         setSelectedLocation(null);
+        setSuggestionsOpen(false);
       },
       () => {
         setStatusMessage('Location permission is off. Search by suburb or service instead.');
@@ -302,7 +354,14 @@ export default function MapPage() {
     );
   };
 
-  const mapCenter = visibleMode === 'nearby' ? userLocation : visibleMode === 'prompt' ? DEFAULT_MAP_CENTER : null;
+  const mapCenter = visibleMode === 'nearby'
+    ? userLocation
+    : visibleMode === 'suburb'
+      ? searchAnchor?.center ?? null
+      : visibleMode === 'prompt'
+        ? DEFAULT_MAP_CENTER
+        : null;
+  const mapZoom = visibleMode === 'prompt' ? 10 : visibleMode === 'suburb' ? 12 : 13;
   const selectedDistance = selectedLocation ? formatDistance(userLocation, selectedLocation) : null;
 
   return (
@@ -326,22 +385,86 @@ export default function MapPage() {
             value={searchQuery}
             onChange={e => {
               const nextValue = e.target.value;
-              setSearchQuery(nextValue);
+              const nextSearch = nextValue.trim();
 
-              if (visibleMode === 'search') {
-                const nextSearch = nextValue.trim();
-                setActiveSearch(nextSearch);
-                if (!nextSearch) handleSearchReset();
+              if (!nextSearch && (visibleMode === 'text' || visibleMode === 'suburb')) {
+                handleSearchReset();
+                return;
               }
+
+              setSearchQuery(nextValue);
+              setSuggestionsOpen(nextSearch.length >= 2);
             }}
-            placeholder="Search by suburb or service..."
+            onFocus={() => setSuggestionsOpen(searchQuery.trim().length >= 2)}
+            placeholder="Search by suburb, service, or address..."
             className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 bg-white"
           />
+          {searchSuggestions.length > 0 && (
+            <div className="absolute left-0 right-0 top-full z-[700] mt-2 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
+              {searchSuggestions.map(suggestion => {
+                if (suggestion.type === 'suburb') {
+                  const { entry } = suggestion;
+
+                  return (
+                    <button
+                      key={`suburb-${entry.normalizedLabel}`}
+                      type="button"
+                      onClick={() => {
+                        setSearchQuery(entry.label);
+                        setActiveSearch(entry.label);
+                        setSearchAnchor({ label: entry.label, center: entry.center });
+                        setVisibleMode('suburb');
+                        setRadiusKm(NEARBY_RADIUS_KM);
+                        setSelectedLocation(null);
+                        setSuggestionsOpen(false);
+                      }}
+                      className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-teal-50"
+                    >
+                      <span>
+                        <span className="block text-sm font-semibold text-gray-900">{entry.label}</span>
+                        <span className="block text-xs text-gray-500">{entry.count} services with suburb data</span>
+                      </span>
+                      <span className="rounded-full bg-teal-50 px-2.5 py-1 text-xs font-medium text-teal-700">
+                        Suburb
+                      </span>
+                    </button>
+                  );
+                }
+
+                const { location } = suggestion.match;
+                const locationLine = [location.address, location.suburb].filter(Boolean).join(', ');
+
+                return (
+                  <button
+                    key={`service-${location.id}`}
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery(location.service_name);
+                      setActiveSearch(location.service_name);
+                      setSearchAnchor(null);
+                      setVisibleMode('text');
+                      setSelectedLocation(location);
+                      setSuggestionsOpen(false);
+                    }}
+                    className="flex w-full items-center justify-between gap-3 border-t border-gray-100 px-4 py-3 text-left hover:bg-gray-50 first:border-t-0"
+                  >
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-semibold text-gray-900">{location.service_name}</span>
+                      {locationLine && <span className="block truncate text-xs text-gray-500">{locationLine}</span>}
+                    </span>
+                    <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600">
+                      Service
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
         <Button type="submit" size="lg">
           Search
         </Button>
-        {visibleMode === 'search' && (
+        {(visibleMode === 'text' || visibleMode === 'suburb') && (
           <Button type="button" variant="secondary" size="lg" onClick={handleSearchReset}>
             Clear
           </Button>
@@ -385,7 +508,7 @@ export default function MapPage() {
           <MapView
             locations={displayResult.visibleLocations}
             center={mapCenter}
-            zoom={visibleMode === 'prompt' ? 10 : 13}
+            zoom={mapZoom}
             selectedLocationId={selectedLocation?.id}
             onLocationSelect={setSelectedLocation}
             showPopups={false}
@@ -400,7 +523,7 @@ export default function MapPage() {
               <div className="max-w-md rounded-lg border border-white/80 bg-white/95 p-5 text-center shadow-sm">
                 <h2 className="text-lg font-semibold text-gray-900">Start with nearby services</h2>
                 <p className="mt-2 text-sm text-gray-600">
-                  Use your location or search for a suburb or service before points appear on the map.
+                  Use your location or search for a suburb, service, or address before points appear on the map.
                 </p>
                 <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-center">
                   <Button type="button" size="md" onClick={handleNearMe}>
