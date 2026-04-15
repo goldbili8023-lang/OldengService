@@ -30,7 +30,7 @@ export function normalizeSearchText(query: string): string {
     .replace(/\s+/g, ' ');
 }
 
-export function distanceKm(origin: Coordinates, location: ServiceLocation): number {
+export function distanceKm(origin: Coordinates, location: { latitude: number; longitude: number }): number {
   const earthRadiusKm = 6371;
   const [originLat, originLng] = origin;
   const latDelta = ((location.latitude - originLat) * Math.PI) / 180;

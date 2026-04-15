@@ -1,5 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { MapPin, Navigation, Filter, Search, X } from 'lucide-react';
+import {
+  AlertCircle,
+  Bus,
+  Clock,
+  Filter,
+  Footprints,
+  Loader2,
+  MapPin,
+  Navigation,
+  Route,
+  Search,
+  TrainFront,
+  TramFront,
+  X,
+} from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import MapView from '../../components/MapView';
 import Button from '../../components/ui/Button';
@@ -18,6 +32,19 @@ import {
   type RankedServiceMatch,
   type SuburbIndexEntry,
 } from '../../lib/serviceSearch';
+import {
+  fetchWalkingRoute,
+  findRelevantTransitLines,
+  formatTransportDistance,
+  formatWalkingDuration,
+  getRouteLabel,
+  getTransitModeLabel,
+  loadVicTransitIndex,
+  type TransitLineOption,
+  type TransitMode,
+  type TransitStopOption,
+  type WalkingRouteResult,
+} from '../../lib/transport';
 import type { ServiceLocation } from '../../types';
 
 const categories = [
@@ -75,6 +102,12 @@ function formatPostcodeLabel(entry: VicPostcodeEntry): string {
   return `VIC ${entry.postcode} - ${entry.label}`;
 }
 
+function getTransitModeIcon(mode: TransitMode) {
+  if (mode === 'train') return <TrainFront className="h-4 w-4" />;
+  if (mode === 'tram') return <TramFront className="h-4 w-4" />;
+  return <Bus className="h-4 w-4" />;
+}
+
 export default function MapPage() {
   const [locations, setLocations] = useState<ServiceLocation[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -89,6 +122,13 @@ export default function MapPage() {
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [searchNotice, setSearchNotice] = useState('');
   const [statusMessage, setStatusMessage] = useState('Use your location or search to show nearby services.');
+  const [transportPanelOpen, setTransportPanelOpen] = useState(false);
+  const [transportLoading, setTransportLoading] = useState(false);
+  const [walkingRoute, setWalkingRoute] = useState<WalkingRouteResult | null>(null);
+  const [transitLines, setTransitLines] = useState<TransitLineOption[]>([]);
+  const [walkingRouteError, setWalkingRouteError] = useState('');
+  const [transitLinesError, setTransitLinesError] = useState('');
+  const transportRequestKeyRef = useRef('');
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const handleSearch = (e: React.FormEvent) => {
@@ -303,6 +343,63 @@ export default function MapPage() {
   }, [displayResult.visibleLocations, selectedLocation]);
 
   useEffect(() => {
+    setTransportPanelOpen(false);
+    setTransportLoading(false);
+    setWalkingRoute(null);
+    setTransitLines([]);
+    setWalkingRouteError('');
+    setTransitLinesError('');
+    transportRequestKeyRef.current = '';
+  }, [selectedLocation?.id]);
+
+  useEffect(() => {
+    if (!transportPanelOpen || !selectedLocation || !userLocation) return;
+
+    const requestKey = [
+      selectedLocation.id,
+      userLocation[0].toFixed(5),
+      userLocation[1].toFixed(5),
+    ].join(':');
+
+    if (transportRequestKeyRef.current === requestKey) return;
+
+    let cancelled = false;
+    const destination: Coordinates = [selectedLocation.latitude, selectedLocation.longitude];
+
+    transportRequestKeyRef.current = requestKey;
+    setTransportLoading(true);
+    setWalkingRoute(null);
+    setTransitLines([]);
+    setWalkingRouteError('');
+    setTransitLinesError('');
+
+    Promise.allSettled([
+      fetchWalkingRoute(userLocation, destination),
+      loadVicTransitIndex().then(index => findRelevantTransitLines(destination, index)),
+    ]).then(([routeResult, transitResult]) => {
+      if (cancelled) return;
+
+      if (routeResult.status === 'fulfilled') {
+        setWalkingRoute(routeResult.value);
+      } else {
+        setWalkingRouteError('Walking route is unavailable right now. Nearby transport lines are still shown.');
+      }
+
+      if (transitResult.status === 'fulfilled') {
+        setTransitLines(transitResult.value);
+      } else {
+        setTransitLinesError('Transport lines are unavailable right now.');
+      }
+
+      setTransportLoading(false);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedLocation, transportPanelOpen, userLocation]);
+
+  useEffect(() => {
     if (loading) {
       setStatusMessage('Loading services...');
       return;
@@ -398,7 +495,7 @@ export default function MapPage() {
     visibleMode,
   ]);
 
-  const handleNearMe = () => {
+  const requestUserLocation = (preserveSelectedLocation: boolean) => {
     if (!navigator.geolocation) {
       setStatusMessage('Location is not available in this browser. Search by suburb or service instead.');
       return;
@@ -407,12 +504,14 @@ export default function MapPage() {
     navigator.geolocation?.getCurrentPosition(
       position => {
         setUserLocation([position.coords.latitude, position.coords.longitude]);
-        setVisibleMode('nearby');
-        setRadiusKm(NEARBY_RADIUS_KM);
-        setActiveSearch('');
-        setSearchQuery('');
-        setSearchAnchor(null);
-        setSelectedLocation(null);
+        if (!preserveSelectedLocation) {
+          setVisibleMode('nearby');
+          setRadiusKm(NEARBY_RADIUS_KM);
+          setActiveSearch('');
+          setSearchQuery('');
+          setSearchAnchor(null);
+          setSelectedLocation(null);
+        }
         setSuggestionsOpen(false);
         setSearchNotice('');
       },
@@ -420,6 +519,21 @@ export default function MapPage() {
         setStatusMessage('Location permission is off. Search by suburb or service instead.');
       }
     );
+  };
+
+  const handleNearMe = () => requestUserLocation(false);
+
+  const handleTransportOptions = () => {
+    if (!selectedLocation) return;
+
+    setTransportPanelOpen(true);
+
+    if (!userLocation) {
+      setWalkingRoute(null);
+      setTransitLines([]);
+      setWalkingRouteError('');
+      setTransitLinesError('');
+    }
   };
 
   const mapCenter = visibleMode === 'nearby'
@@ -431,6 +545,15 @@ export default function MapPage() {
         : null;
   const mapZoom = visibleMode === 'prompt' ? 10 : visibleMode === 'suburb' || visibleMode === 'postcode' ? 12 : 13;
   const selectedDistance = selectedLocation ? formatDistance(userLocation, selectedLocation) : null;
+  const nearbyTransitStops = useMemo<TransitStopOption[]>(() => {
+    const stops = new Map<string, TransitStopOption>();
+
+    for (const line of transitLines) {
+      stops.set(line.stop.id, line.stop);
+    }
+
+    return [...stops.values()].slice(0, 8);
+  }, [transitLines]);
 
   return (
     <div className="space-y-4">
@@ -618,6 +741,8 @@ export default function MapPage() {
             userLocation={userLocation}
             compactMarkers
             subduedTiles
+            routePath={transportPanelOpen ? walkingRoute?.path : null}
+            nearbyTransitStops={transportPanelOpen ? nearbyTransitStops : []}
           />
 
           {visibleMode === 'prompt' && (
@@ -645,7 +770,7 @@ export default function MapPage() {
           )}
 
           {selectedLocation && (
-            <div className="absolute bottom-3 left-3 right-3 z-[500] rounded-lg border border-gray-200 bg-white p-4 shadow-lg md:left-auto md:w-[360px]">
+            <div className="absolute bottom-3 left-3 right-3 z-[500] max-h-[78vh] overflow-y-auto rounded-lg border border-gray-200 bg-white p-4 shadow-lg md:left-auto md:w-[390px]">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-xs font-medium uppercase tracking-wide text-teal-700">
@@ -683,6 +808,112 @@ export default function MapPage() {
                   {selectedLocation.description}
                 </p>
               )}
+
+              <div className="mt-4 border-t border-gray-100 pt-4">
+                {!transportPanelOpen ? (
+                  <Button type="button" variant="secondary" size="md" fullWidth onClick={handleTransportOptions}>
+                    <Route className="mr-2 h-4 w-4" /> Transport options
+                  </Button>
+                ) : (
+                  <div>
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="text-sm font-semibold text-gray-900">Transport options</h3>
+                      <button
+                        type="button"
+                        onClick={() => setTransportPanelOpen(false)}
+                        className="text-sm font-medium text-gray-500 hover:text-gray-800"
+                      >
+                        Hide
+                      </button>
+                    </div>
+
+                    {!userLocation ? (
+                      <div className="mt-3 space-y-3">
+                        <p className="text-sm text-gray-600">
+                          Use your location to see the walking route and nearby bus, train, or tram lines.
+                        </p>
+                        <Button type="button" size="md" fullWidth onClick={() => requestUserLocation(true)}>
+                          <Navigation className="mr-2 h-4 w-4" /> Use my location
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="mt-3 space-y-3">
+                        {transportLoading && (
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <Loader2 className="h-4 w-4 animate-spin text-teal-700" />
+                            Finding the easiest way there...
+                          </div>
+                        )}
+
+                        {walkingRoute && (
+                          <div className="border-l-4 border-teal-600 pl-3">
+                            <p className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                              <Footprints className="h-4 w-4 text-teal-700" />
+                              Walk {formatWalkingDuration(walkingRoute.durationSeconds)}
+                            </p>
+                            <p className="mt-1 flex items-center gap-2 text-sm text-gray-600">
+                              <Clock className="h-4 w-4" />
+                              {formatTransportDistance(walkingRoute.distanceMeters)} by foot
+                            </p>
+                          </div>
+                        )}
+
+                        {walkingRouteError && (
+                          <p className="flex items-start gap-2 text-sm text-amber-700">
+                            <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                            {walkingRouteError}
+                          </p>
+                        )}
+
+                        <div>
+                          <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                            Nearby lines
+                          </p>
+
+                          {transitLines.length > 0 ? (
+                            <div className="mt-2 divide-y divide-gray-100">
+                              {transitLines.map(line => (
+                                <div key={line.key} className="py-2">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                      <p className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                                        <span className="inline-flex items-center gap-1 rounded-md bg-gray-100 px-2 py-1 text-xs text-gray-700">
+                                          {getTransitModeIcon(line.route.mode)}
+                                          {getTransitModeLabel(line.route.mode)}
+                                        </span>
+                                        <span className="truncate">{getRouteLabel(line.route)}</span>
+                                      </p>
+                                      {line.route.longName && (
+                                        <p className="mt-1 truncate text-xs text-gray-500">{line.route.longName}</p>
+                                      )}
+                                      <p className="mt-1 text-xs text-gray-500">
+                                        {line.stop.name} - {formatTransportDistance(line.stop.distanceMeters)} from service
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            !transportLoading && (
+                              <p className="mt-2 text-sm text-gray-600">
+                                No nearby bus, train, or tram lines found within walking distance of this service.
+                              </p>
+                            )
+                          )}
+
+                          {transitLinesError && (
+                            <p className="mt-2 flex items-start gap-2 text-sm text-amber-700">
+                              <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                              {transitLinesError}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>

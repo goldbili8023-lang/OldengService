@@ -58,7 +58,8 @@
 
 .service-marker,
 .service-cluster,
-.user-location-marker {
+.user-location-marker,
+.transit-stop-marker {
   background: transparent !important;
   border: 0 !important;
 }
@@ -117,6 +118,27 @@
   background: #0284c7;
   border: 2px solid #fff;
   box-shadow: 0 2px 6px rgba(15, 23, 42, 0.28);
+}
+
+.transit-stop-dot {
+  display: block;
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 7px rgba(15, 23, 42, 0.25);
+}
+
+.transit-stop-dot-train {
+  background: #0f766e;
+}
+
+.transit-stop-dot-tram {
+  background: #0284c7;
+}
+
+.transit-stop-dot-bus {
+  background: #d97706;
 }
 
 @keyframes user-location-pulse {

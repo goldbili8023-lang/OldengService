@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Polyline, Popup, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import type { Coordinates } from '../lib/serviceSearch';
+import type { TransitStopOption } from '../lib/transport';
 import type { ServiceLocation } from '../types';
 import Badge from './ui/Badge';
 
@@ -49,6 +51,15 @@ function createUserLocationIcon() {
   });
 }
 
+function createTransitStopIcon(mode: TransitStopOption['mode']) {
+  return L.divIcon({
+    html: `<span class="transit-stop-dot transit-stop-dot-${mode}"></span>`,
+    className: 'transit-stop-marker',
+    iconSize: [18, 18],
+    iconAnchor: [9, 9],
+  });
+}
+
 function statusBadgeVariant(status: string) {
   if (status === 'open') return 'success';
   if (status === 'closed') return 'danger';
@@ -75,6 +86,19 @@ function FitToLocations({ locations }: { locations: ServiceLocation[] }) {
     const bounds = L.latLngBounds(locations.map(loc => [loc.latitude, loc.longitude]));
     map.fitBounds(bounds, { padding: [40, 40] });
   }, [locations, map]);
+
+  return null;
+}
+
+function FitToRoute({ routePath }: { routePath: Coordinates[] }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (routePath.length < 2) return;
+
+    const bounds = L.latLngBounds(routePath);
+    map.fitBounds(bounds, { padding: [64, 64], maxZoom: 16 });
+  }, [map, routePath]);
 
   return null;
 }
@@ -224,6 +248,8 @@ interface MapViewProps {
   userLocation?: [number, number] | null;
   compactMarkers?: boolean;
   subduedTiles?: boolean;
+  routePath?: Coordinates[] | null;
+  nearbyTransitStops?: TransitStopOption[];
 }
 
 export default function MapView({
@@ -238,6 +264,8 @@ export default function MapView({
   userLocation = null,
   compactMarkers = false,
   subduedTiles = false,
+  routePath = null,
+  nearbyTransitStops = [],
 }: MapViewProps) {
   const initialCenter: [number, number] = center ?? (
     locations.length > 0
@@ -258,9 +286,31 @@ export default function MapView({
         className={subduedTiles ? 'map-tiles-subdued' : undefined}
       />
       {center ? <RecenterMap lat={center[0]} lng={center[1]} zoom={zoom} /> : <FitToLocations locations={locations} />}
+      {routePath && routePath.length > 1 && <FitToRoute routePath={routePath} />}
+      {routePath && routePath.length > 1 && (
+        <>
+          <Polyline
+            positions={routePath}
+            pathOptions={{ color: '#ffffff', weight: 9, opacity: 0.95, lineCap: 'round', lineJoin: 'round' }}
+          />
+          <Polyline
+            positions={routePath}
+            pathOptions={{ color: '#0f766e', weight: 5, opacity: 0.95, lineCap: 'round', lineJoin: 'round' }}
+          />
+        </>
+      )}
       {userLocation && (
         <Marker position={userLocation} icon={createUserLocationIcon()} interactive={false} zIndexOffset={1200} />
       )}
+      {nearbyTransitStops.map(stop => (
+        <Marker
+          key={stop.id}
+          position={[stop.latitude, stop.longitude]}
+          icon={createTransitStopIcon(stop.mode)}
+          interactive={false}
+          zIndexOffset={950}
+        />
+      ))}
       <LocationMarkers
         locations={locations}
         selectedLocationId={selectedLocationId}
