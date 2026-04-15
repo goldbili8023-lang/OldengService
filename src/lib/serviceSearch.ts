@@ -15,6 +15,12 @@ export interface RankedServiceMatch {
   distanceKm: number | null;
 }
 
+export interface PostcodeIndexEntry {
+  postcode: string;
+  label: string;
+  center: Coordinates;
+}
+
 export function normalizeSearchText(query: string): string {
   return query
     .normalize('NFKD')
@@ -115,6 +121,38 @@ export function findSuburbSuggestions(
     ...prefix.sort(byCountThenName),
     ...contains.sort(byCountThenName),
   ].slice(0, limit);
+}
+
+export function normalizePostcodeQuery(query: string): string | null {
+  const compact = query.trim().replace(/[\s-]+/g, '').toUpperCase();
+  const match = compact.match(/^(?:VIC)?(\d{4})$/);
+
+  return match ? match[1] : null;
+}
+
+export function findPostcodeMatch<T extends PostcodeIndexEntry>(
+  query: string,
+  postcodes: readonly T[],
+): T | null {
+  const postcode = normalizePostcodeQuery(query);
+  if (!postcode) return null;
+
+  return postcodes.find(entry => entry.postcode === postcode) ?? null;
+}
+
+export function findPostcodeSuggestions<T extends PostcodeIndexEntry>(
+  query: string,
+  postcodes: readonly T[],
+  limit = 4,
+): T[] {
+  const compact = query.trim().replace(/[\s-]+/g, '').toUpperCase();
+  const digits = compact.startsWith('VIC') ? compact.slice(3) : compact;
+
+  if (!/^\d{2,4}$/.test(digits)) return [];
+
+  return postcodes
+    .filter(entry => entry.postcode.startsWith(digits))
+    .slice(0, limit);
 }
 
 export function rankTextMatches(

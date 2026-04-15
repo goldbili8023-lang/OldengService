@@ -4,11 +4,15 @@ import { supabase } from '../../lib/supabase';
 import MapView from '../../components/MapView';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
+import { VIC_POSTCODES, type VicPostcodeEntry } from '../../data/vicPostcodes';
 import {
   buildSuburbIndex,
   distanceKm,
+  findPostcodeMatch,
+  findPostcodeSuggestions,
   findSuburbMatch,
   findSuburbSuggestions,
+  normalizePostcodeQuery,
   rankTextMatches,
   type Coordinates,
   type RankedServiceMatch,
@@ -34,7 +38,7 @@ const EXPANDED_RADIUS_KM = 25;
 const MIN_NEARBY_RESULTS = 12;
 const MAX_VISIBLE_NEARBY = 80;
 
-type VisibleMode = 'prompt' | 'nearby' | 'suburb' | 'text';
+type VisibleMode = 'prompt' | 'nearby' | 'postcode' | 'suburb' | 'text';
 
 interface SearchAnchor {
   label: string;
@@ -42,6 +46,7 @@ interface SearchAnchor {
 }
 
 type SearchSuggestion =
+  | { type: 'postcode'; entry: VicPostcodeEntry }
   | { type: 'suburb'; entry: SuburbIndexEntry }
   | { type: 'service'; match: RankedServiceMatch };
 
@@ -66,6 +71,10 @@ function formatDistance(origin: [number, number] | null, location: ServiceLocati
   return distance < 1 ? `${Math.round(distance * 1000)} m away` : `${distance.toFixed(1)} km away`;
 }
 
+function formatPostcodeLabel(entry: VicPostcodeEntry): string {
+  return `VIC ${entry.postcode} - ${entry.label}`;
+}
+
 export default function MapPage() {
   const [locations, setLocations] = useState<ServiceLocation[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -78,6 +87,7 @@ export default function MapPage() {
   const [activeSearch, setActiveSearch] = useState('');
   const [searchAnchor, setSearchAnchor] = useState<SearchAnchor | null>(null);
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+  const [searchNotice, setSearchNotice] = useState('');
   const [statusMessage, setStatusMessage] = useState('Use your location or search to show nearby services.');
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -86,6 +96,32 @@ export default function MapPage() {
     const nextSearch = searchQuery.trim();
 
     if (!nextSearch) return;
+
+    setSearchNotice('');
+
+    const postcodeMatch = findPostcodeMatch(nextSearch, VIC_POSTCODES);
+    const normalizedPostcode = normalizePostcodeQuery(nextSearch);
+    if (postcodeMatch) {
+      const label = formatPostcodeLabel(postcodeMatch);
+      setSearchQuery(label);
+      setActiveSearch(label);
+      setSearchAnchor({ label, center: postcodeMatch.center });
+      setVisibleMode('postcode');
+      setRadiusKm(NEARBY_RADIUS_KM);
+      setSelectedLocation(null);
+      setSuggestionsOpen(false);
+      return;
+    }
+
+    if (normalizedPostcode) {
+      setActiveSearch(nextSearch);
+      setSearchAnchor(null);
+      setVisibleMode('text');
+      setSearchNotice('We could not find that VIC postcode. Try a suburb or service name.');
+      setSelectedLocation(null);
+      setSuggestionsOpen(false);
+      return;
+    }
 
     const suburbMatch = findSuburbMatch(nextSearch, suburbIndex);
     if (suburbMatch) {
@@ -110,6 +146,7 @@ export default function MapPage() {
     setSearchAnchor(null);
     setSelectedLocation(null);
     setSuggestionsOpen(false);
+    setSearchNotice('');
 
     if (userLocation) {
       setVisibleMode('nearby');
@@ -185,13 +222,15 @@ export default function MapPage() {
   const searchSuggestions = useMemo<SearchSuggestion[]>(() => {
     if (!suggestionsOpen || searchQuery.trim().length < 2) return [];
 
+    const postcodeSuggestions: SearchSuggestion[] = findPostcodeSuggestions(searchQuery, VIC_POSTCODES, 4)
+      .map(entry => ({ type: 'postcode', entry }));
     const suburbSuggestions: SearchSuggestion[] = findSuburbSuggestions(searchQuery, suburbIndex, 3)
       .map(entry => ({ type: 'suburb', entry }));
     const serviceSuggestions: SearchSuggestion[] = rankTextMatches(searchQuery, categoryFilteredLocations, userLocation)
       .slice(0, 5)
       .map(match => ({ type: 'service', match }));
 
-    return [...suburbSuggestions, ...serviceSuggestions].slice(0, 7);
+    return [...postcodeSuggestions, ...suburbSuggestions, ...serviceSuggestions].slice(0, 8);
   }, [categoryFilteredLocations, searchQuery, suburbIndex, suggestionsOpen, userLocation]);
 
   const displayResult = useMemo<DisplayResult>(() => {
@@ -219,7 +258,9 @@ export default function MapPage() {
       };
     }
 
-    const origin = visibleMode === 'suburb' ? searchAnchor?.center ?? null : userLocation;
+    const origin = visibleMode === 'suburb' || visibleMode === 'postcode'
+      ? searchAnchor?.center ?? null
+      : userLocation;
 
     if (!origin) {
       return {
@@ -267,6 +308,11 @@ export default function MapPage() {
       return;
     }
 
+    if (searchNotice) {
+      setStatusMessage(searchNotice);
+      return;
+    }
+
     if (visibleMode === 'prompt') {
       setStatusMessage('Use your location or search to show nearby services.');
       return;
@@ -274,6 +320,26 @@ export default function MapPage() {
 
     if (visibleMode === 'text') {
       setStatusMessage(`${displayResult.visibleLocations.length} result${displayResult.visibleLocations.length === 1 ? '' : 's'} for "${activeSearch}".`);
+      return;
+    }
+
+    if (visibleMode === 'postcode') {
+      if (!searchAnchor) {
+        setStatusMessage('Search for a VIC postcode to show nearby services.');
+        return;
+      }
+
+      if (displayResult.totalBeforeCap === 0) {
+        setStatusMessage(`No services found around ${searchAnchor.label} within ${displayResult.radiusKm ?? NEARBY_RADIUS_KM} km.`);
+        return;
+      }
+
+      if (displayResult.capped) {
+        setStatusMessage(`Showing nearest ${displayResult.visibleLocations.length} of ${displayResult.totalBeforeCap} services around ${searchAnchor.label} within ${displayResult.radiusKm} km.`);
+        return;
+      }
+
+      setStatusMessage(`Showing ${displayResult.visibleLocations.length} services around ${searchAnchor.label} within ${displayResult.radiusKm} km.`);
       return;
     }
 
@@ -327,6 +393,7 @@ export default function MapPage() {
     displayResult.visibleLocations.length,
     loading,
     searchAnchor,
+    searchNotice,
     userLocation,
     visibleMode,
   ]);
@@ -347,6 +414,7 @@ export default function MapPage() {
         setSearchAnchor(null);
         setSelectedLocation(null);
         setSuggestionsOpen(false);
+        setSearchNotice('');
       },
       () => {
         setStatusMessage('Location permission is off. Search by suburb or service instead.');
@@ -356,12 +424,12 @@ export default function MapPage() {
 
   const mapCenter = visibleMode === 'nearby'
     ? userLocation
-    : visibleMode === 'suburb'
+    : visibleMode === 'suburb' || visibleMode === 'postcode'
       ? searchAnchor?.center ?? null
       : visibleMode === 'prompt'
         ? DEFAULT_MAP_CENTER
         : null;
-  const mapZoom = visibleMode === 'prompt' ? 10 : visibleMode === 'suburb' ? 12 : 13;
+  const mapZoom = visibleMode === 'prompt' ? 10 : visibleMode === 'suburb' || visibleMode === 'postcode' ? 12 : 13;
   const selectedDistance = selectedLocation ? formatDistance(userLocation, selectedLocation) : null;
 
   return (
@@ -387,21 +455,53 @@ export default function MapPage() {
               const nextValue = e.target.value;
               const nextSearch = nextValue.trim();
 
-              if (!nextSearch && (visibleMode === 'text' || visibleMode === 'suburb')) {
+              if (!nextSearch && (visibleMode === 'text' || visibleMode === 'suburb' || visibleMode === 'postcode')) {
                 handleSearchReset();
                 return;
               }
 
               setSearchQuery(nextValue);
               setSuggestionsOpen(nextSearch.length >= 2);
+              setSearchNotice('');
             }}
             onFocus={() => setSuggestionsOpen(searchQuery.trim().length >= 2)}
-            placeholder="Search by suburb, service, or address..."
+            placeholder="Search by postcode, suburb, service, or address..."
             className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 bg-white"
           />
           {searchSuggestions.length > 0 && (
             <div className="absolute left-0 right-0 top-full z-[700] mt-2 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
               {searchSuggestions.map(suggestion => {
+                if (suggestion.type === 'postcode') {
+                  const { entry } = suggestion;
+                  const label = formatPostcodeLabel(entry);
+
+                  return (
+                    <button
+                      key={`postcode-${entry.postcode}`}
+                      type="button"
+                      onClick={() => {
+                        setSearchQuery(label);
+                        setActiveSearch(label);
+                        setSearchAnchor({ label, center: entry.center });
+                        setVisibleMode('postcode');
+                        setRadiusKm(NEARBY_RADIUS_KM);
+                        setSelectedLocation(null);
+                        setSuggestionsOpen(false);
+                        setSearchNotice('');
+                      }}
+                      className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-teal-50"
+                    >
+                      <span>
+                        <span className="block text-sm font-semibold text-gray-900">{label}</span>
+                        <span className="block text-xs text-gray-500">{entry.localityCount} postcode localit{entry.localityCount === 1 ? 'y' : 'ies'}</span>
+                      </span>
+                      <span className="rounded-full bg-teal-600 px-2.5 py-1 text-xs font-medium text-white">
+                        Postcode
+                      </span>
+                    </button>
+                  );
+                }
+
                 if (suggestion.type === 'suburb') {
                   const { entry } = suggestion;
 
@@ -417,8 +517,9 @@ export default function MapPage() {
                         setRadiusKm(NEARBY_RADIUS_KM);
                         setSelectedLocation(null);
                         setSuggestionsOpen(false);
+                        setSearchNotice('');
                       }}
-                      className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-teal-50"
+                      className="flex w-full items-center justify-between gap-3 border-t border-gray-100 px-4 py-3 text-left hover:bg-teal-50 first:border-t-0"
                     >
                       <span>
                         <span className="block text-sm font-semibold text-gray-900">{entry.label}</span>
@@ -445,6 +546,7 @@ export default function MapPage() {
                       setVisibleMode('text');
                       setSelectedLocation(location);
                       setSuggestionsOpen(false);
+                      setSearchNotice('');
                     }}
                     className="flex w-full items-center justify-between gap-3 border-t border-gray-100 px-4 py-3 text-left hover:bg-gray-50 first:border-t-0"
                   >
@@ -464,7 +566,7 @@ export default function MapPage() {
         <Button type="submit" size="lg">
           Search
         </Button>
-        {(visibleMode === 'text' || visibleMode === 'suburb') && (
+        {(visibleMode === 'text' || visibleMode === 'suburb' || visibleMode === 'postcode') && (
           <Button type="button" variant="secondary" size="lg" onClick={handleSearchReset}>
             Clear
           </Button>
@@ -523,7 +625,7 @@ export default function MapPage() {
               <div className="max-w-md rounded-lg border border-white/80 bg-white/95 p-5 text-center shadow-sm">
                 <h2 className="text-lg font-semibold text-gray-900">Start with nearby services</h2>
                 <p className="mt-2 text-sm text-gray-600">
-                  Use your location or search for a suburb, service, or address before points appear on the map.
+                  Use your location or search for a postcode, suburb, service, or address before points appear on the map.
                 </p>
                 <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-center">
                   <Button type="button" size="md" onClick={handleNearMe}>
