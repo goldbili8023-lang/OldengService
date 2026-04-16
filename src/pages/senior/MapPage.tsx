@@ -128,6 +128,7 @@ export default function MapPage() {
   const [transitLines, setTransitLines] = useState<TransitLineOption[]>([]);
   const [walkingRouteError, setWalkingRouteError] = useState('');
   const [transitLinesError, setTransitLinesError] = useState('');
+  const [transportTargetLocationId, setTransportTargetLocationId] = useState<string | null>(null);
   const transportRequestKeyRef = useRef('');
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -349,11 +350,13 @@ export default function MapPage() {
     setTransitLines([]);
     setWalkingRouteError('');
     setTransitLinesError('');
+    setTransportTargetLocationId(null);
     transportRequestKeyRef.current = '';
   }, [selectedLocation?.id]);
 
   useEffect(() => {
     if (!transportPanelOpen || !selectedLocation || !userLocation) return;
+    if (transportTargetLocationId !== selectedLocation.id) return;
 
     const requestKey = [
       selectedLocation.id,
@@ -397,7 +400,7 @@ export default function MapPage() {
     return () => {
       cancelled = true;
     };
-  }, [selectedLocation, transportPanelOpen, userLocation]);
+  }, [selectedLocation, transportPanelOpen, transportTargetLocationId, userLocation]);
 
   useEffect(() => {
     if (loading) {
@@ -526,6 +529,7 @@ export default function MapPage() {
   const handleTransportOptions = () => {
     if (!selectedLocation) return;
 
+    setTransportTargetLocationId(selectedLocation.id);
     setTransportPanelOpen(true);
 
     if (!userLocation) {
@@ -534,6 +538,17 @@ export default function MapPage() {
       setWalkingRouteError('');
       setTransitLinesError('');
     }
+  };
+
+  const handleHideTransportOptions = () => {
+    setTransportPanelOpen(false);
+    setTransportLoading(false);
+    setWalkingRoute(null);
+    setTransitLines([]);
+    setWalkingRouteError('');
+    setTransitLinesError('');
+    setTransportTargetLocationId(null);
+    transportRequestKeyRef.current = '';
   };
 
   const mapCenter = visibleMode === 'nearby'
@@ -820,7 +835,7 @@ export default function MapPage() {
                       <h3 className="text-sm font-semibold text-gray-900">Transport options</h3>
                       <button
                         type="button"
-                        onClick={() => setTransportPanelOpen(false)}
+                        onClick={handleHideTransportOptions}
                         className="text-sm font-medium text-gray-500 hover:text-gray-800"
                       >
                         Hide
