@@ -1,9 +1,6 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
 import { AccessibilityProvider } from './contexts/AccessibilityContext';
-import LoadingSpinner from './components/ui/LoadingSpinner';
-import LoginPage from './pages/auth/LoginPage';
-import RegisterPage from './pages/auth/RegisterPage';
 import SeniorLayout from './layouts/SeniorLayout';
 import WorkerLayout from './layouts/WorkerLayout';
 import DashboardPage from './pages/senior/DashboardPage';
@@ -20,24 +17,15 @@ import HeatMapPage from './pages/worker/HeatMapPage';
 import ReportsPage from './pages/worker/ReportsPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { loading, user } = useAuth();
-  const location = useLocation();
-
-  if (loading) return <LoadingSpinner fullScreen />;
-  if (!user) return <Navigate to="/login" replace state={{ from: location }} />;
-
   return <>{children}</>;
 }
 
 function AppRoutes() {
-  const { loading } = useAuth();
-
-  if (loading) return <LoadingSpinner fullScreen />;
-
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/" element={<Navigate to="/senior" replace />} />
+      <Route path="/login" element={<Navigate to="/senior" replace />} />
+      <Route path="/register" element={<Navigate to="/senior" replace />} />
 
       <Route path="/senior" element={<ProtectedRoute><SeniorLayout /></ProtectedRoute>}>
         <Route index element={<DashboardPage />} />

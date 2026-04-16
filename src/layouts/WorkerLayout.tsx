@@ -1,5 +1,5 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, Map, Wrench, Flame, FileText, LogOut, Menu, X } from 'lucide-react';
+import { Outlet, NavLink } from 'react-router-dom';
+import { LayoutDashboard, BookOpen, Map, Wrench, Flame, FileText, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -13,14 +13,8 @@ const navItems = [
 ];
 
 export default function WorkerLayout() {
-  const { signOut, profile } = useAuth();
+  const { profile } = useAuth();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const navigate = useNavigate();
-
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/login');
-  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -50,13 +44,6 @@ export default function WorkerLayout() {
         </nav>
         <div className="p-4 border-t border-gray-100">
           <p className="text-sm text-gray-500 mb-3 px-4">{profile?.name || 'Worker'}</p>
-          <button
-            onClick={handleSignOut}
-            className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-100 w-full transition-colors"
-          >
-            <LogOut className="w-5 h-5" />
-            Sign Out
-          </button>
         </div>
       </aside>
 
@@ -104,15 +91,6 @@ export default function WorkerLayout() {
                 </NavLink>
               ))}
             </nav>
-            <div className="p-4 border-t border-gray-100">
-              <button
-                onClick={handleSignOut}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 w-full transition-colors"
-              >
-                <LogOut className="w-5 h-5" />
-                Sign Out
-              </button>
-            </div>
           </div>
         </>
       )}

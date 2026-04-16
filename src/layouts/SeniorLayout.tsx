@@ -1,10 +1,9 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { Home, Phone, Map, HelpCircle, Settings, LogOut } from 'lucide-react';
+import { Outlet, NavLink } from 'react-router-dom';
+import { Home, Phone, Map, HelpCircle, Settings } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useAccessibility } from '../contexts/AccessibilityContext';
 import Modal from '../components/ui/Modal';
-import Button from '../components/ui/Button';
 
 const navItems = [
   { to: '/senior', icon: Home, label: 'Home', end: true },
@@ -14,15 +13,9 @@ const navItems = [
 ];
 
 export default function SeniorLayout() {
-  const { signOut, profile } = useAuth();
+  const { profile } = useAuth();
   const { fontSize, highContrast, setFontSize, setHighContrast } = useAccessibility();
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const navigate = useNavigate();
-
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/login');
-  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -57,13 +50,6 @@ export default function SeniorLayout() {
             aria-label="Settings"
           >
             <Settings className="w-5 h-5" />
-          </button>
-          <button
-            onClick={handleSignOut}
-            className="p-2 rounded-xl hover:bg-gray-100 text-gray-500 transition-colors"
-            aria-label="Sign out"
-          >
-            <LogOut className="w-5 h-5" />
           </button>
         </div>
       </header>
@@ -140,11 +126,6 @@ export default function SeniorLayout() {
             </label>
           </div>
 
-          <div className="pt-4 border-t border-gray-100 md:hidden">
-            <Button variant="danger" fullWidth onClick={handleSignOut}>
-              <LogOut className="w-4 h-4 mr-2" /> Sign Out
-            </Button>
-          </div>
         </div>
       </Modal>
     </div>
