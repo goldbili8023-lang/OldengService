@@ -16,10 +16,6 @@ import ManageServicesPage from './pages/worker/ManageServicesPage';
 import HeatMapPage from './pages/worker/HeatMapPage';
 import ReportsPage from './pages/worker/ReportsPage';
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
-}
-
 function AppRoutes() {
   return (
     <Routes>
@@ -27,7 +23,7 @@ function AppRoutes() {
       <Route path="/login" element={<Navigate to="/senior" replace />} />
       <Route path="/register" element={<Navigate to="/senior" replace />} />
 
-      <Route path="/senior" element={<ProtectedRoute><SeniorLayout /></ProtectedRoute>}>
+      <Route path="/senior" element={<SeniorLayout />}>
         <Route index element={<DashboardPage />} />
         <Route path="contacts" element={<ContactsPage />} />
         <Route path="medications" element={<MedicationsPage />} />
@@ -36,7 +32,7 @@ function AppRoutes() {
         <Route path="help" element={<HelpPage />} />
       </Route>
 
-      <Route path="/worker" element={<ProtectedRoute><WorkerLayout /></ProtectedRoute>}>
+      <Route path="/worker" element={<WorkerLayout />}>
         <Route index element={<WorkerDashboard />} />
         <Route path="directory" element={<DirectoryPage />} />
         <Route path="map" element={<WorkerMapPage />} />
