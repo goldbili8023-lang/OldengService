@@ -35,6 +35,24 @@ function getWeatherLabel(code: number) {
   return 'Thunderstorm';
 }
 
+function fetchWeather(latitude: number, longitude: number, onWeather: (weather: WeatherData) => void, onSevere: (severe: boolean) => void) {
+  fetch(
+    `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true`
+  )
+    .then(r => r.json())
+    .then(d => {
+      if (d.current_weather) {
+        onWeather({
+          temp: d.current_weather.temperature,
+          description: getWeatherLabel(d.current_weather.weathercode),
+          code: d.current_weather.weathercode,
+        });
+        onSevere(d.current_weather.weathercode >= 80);
+      }
+    })
+    .catch(() => {});
+}
+
 export default function DashboardPage() {
   const { profile, user } = useAuth();
   const [primaryContact, setPrimaryContact] = useState<EmergencyContact | null>(null);
@@ -42,50 +60,29 @@ export default function DashboardPage() {
   const [severeWeather, setSevereWeather] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
+    if (user) {
+      supabase
+        .from('emergency_contacts')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_primary', true)
+        .maybeSingle()
+        .then(({ data }) => setPrimaryContact(data));
+    } else {
+      setPrimaryContact(null);
+    }
 
-    supabase
-      .from('emergency_contacts')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('is_primary', true)
-      .maybeSingle()
-      .then(({ data }) => setPrimaryContact(data));
+    if (!navigator.geolocation) {
+      fetchWeather(-33.87, 151.21, setWeather, setSevereWeather);
+      return;
+    }
 
-    navigator.geolocation?.getCurrentPosition(
+    navigator.geolocation.getCurrentPosition(
       pos => {
-        fetch(
-          `https://api.open-meteo.com/v1/forecast?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}&current_weather=true`
-        )
-          .then(r => r.json())
-          .then(d => {
-            if (d.current_weather) {
-              setWeather({
-                temp: d.current_weather.temperature,
-                description: getWeatherLabel(d.current_weather.weathercode),
-                code: d.current_weather.weathercode,
-              });
-              setSevereWeather(d.current_weather.weathercode >= 80);
-            }
-          })
-          .catch(() => {});
+        fetchWeather(pos.coords.latitude, pos.coords.longitude, setWeather, setSevereWeather);
       },
       () => {
-        fetch(
-          'https://api.open-meteo.com/v1/forecast?latitude=-33.87&longitude=151.21&current_weather=true'
-        )
-          .then(r => r.json())
-          .then(d => {
-            if (d.current_weather) {
-              setWeather({
-                temp: d.current_weather.temperature,
-                description: getWeatherLabel(d.current_weather.weathercode),
-                code: d.current_weather.weathercode,
-              });
-              setSevereWeather(d.current_weather.weathercode >= 80);
-            }
-          })
-          .catch(() => {});
+        fetchWeather(-33.87, 151.21, setWeather, setSevereWeather);
       }
     );
   }, [user]);
