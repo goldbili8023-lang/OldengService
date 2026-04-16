@@ -85,10 +85,16 @@ const faqs = [
   },
 ];
 
+const hiddenTutorialTitles = new Set([
+  'Setting Up Medication Reminders',
+  'Staying Active with Exercise Resources',
+]);
+
 export default function HelpPage() {
   const [openGuide, setOpenGuide] = useState<string | null>(null);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [tutorials, setTutorials] = useState<Tutorial[]>([]);
+  const visibleTutorials = tutorials.filter(tutorial => !hiddenTutorialTitles.has(tutorial.title));
 
   useEffect(() => {
     supabase.from('tutorials').select('*').order('sort_order').then(({ data }) => {
@@ -141,11 +147,11 @@ export default function HelpPage() {
         </div>
       </div>
 
-      {tutorials.length > 0 && (
+      {visibleTutorials.length > 0 && (
         <div>
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Additional Resources</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {tutorials.map(t => (
+            {visibleTutorials.map(t => (
               <Card key={t.id} hover>
                 <h3 className="font-semibold text-gray-900 mb-2">{t.title}</h3>
                 <p className="text-sm text-gray-500">{t.content}</p>
