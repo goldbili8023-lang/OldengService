@@ -27,18 +27,18 @@ const defaultGuides = [
       'To call someone, tap the green "Call Now" button on their card.',
     ],
   },
-  {
-    feature_name: 'medications',
-    title: 'How to Use Medication Reminders',
-    steps: [
-      'Go to the "Reminders" tab.',
-      'Tap "Add" to add a new medication.',
-      'Enter the medicine name, dosage, and the time you need to take it.',
-      'Choose how often you take it (daily, twice daily, or weekly).',
-      'Tap "Add Medication" to save.',
-      'Each day, tap the circle next to each medicine when you take it.',
-    ],
-  },
+  // {
+  //   feature_name: 'medications',
+  //   title: 'How to Use Medication Reminders',
+  //   steps: [
+  //     'Go to the "Reminders" tab.',
+  //     'Tap "Add" to add a new medication.',
+  //     'Enter the medicine name, dosage, and the time you need to take it.',
+  //     'Choose how often you take it (daily, twice daily, or weekly).',
+  //     'Tap "Add Medication" to save.',
+  //     'Each day, tap the circle next to each medicine when you take it.',
+  //   ],
+  // },
   {
     feature_name: 'map',
     title: 'How to Find Nearby Services',
@@ -71,10 +71,10 @@ const faqs = [
     q: 'Can I have more than one emergency contact?',
     a: 'Yes! You can add up to 5 contacts. One can be set as your primary contact, which appears on your home page.',
   },
-  {
-    q: 'How do the medication reminders work?',
-    a: 'You add your medications with times. Each day, you can check them off as you take them. The home page shows your progress.',
-  },
+  // {
+  //   q: 'How do the medication reminders work?',
+  //   a: 'You add your medications with times. Each day, you can check them off as you take them. The home page shows your progress.',
+  // },
   {
     q: 'What do the colored dots on the map mean?',
     a: 'Different colors represent different types of services: green for health, orange for food banks, blue for community centres, and so on.',
