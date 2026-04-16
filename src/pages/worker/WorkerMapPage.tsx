@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { MapPin, Filter } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import MapView from '../../components/MapView';
+import { OUTDOOR_CATEGORY_VALUE, matchesServiceCategory } from '../../lib/serviceFilters';
 import type { ServiceLocation } from '../../types';
 
 const categories = [
@@ -9,6 +10,7 @@ const categories = [
   { value: 'health', label: 'Health' },
   { value: 'food_bank', label: 'Food Banks' },
   { value: 'community_center', label: 'Community Centres' },
+  { value: OUTDOOR_CATEGORY_VALUE, label: 'Outdoor Spaces' },
   { value: 'library', label: 'Libraries' },
   { value: 'transport', label: 'Transport' },
   { value: 'housing', label: 'Housing' },
@@ -27,7 +29,7 @@ export default function WorkerMapPage() {
     });
   }, []);
 
-  const filtered = selected ? locations.filter(l => l.category === selected) : locations;
+  const filtered = selected ? locations.filter(location => matchesServiceCategory(location, selected)) : locations;
 
   return (
     <div className="space-y-4">

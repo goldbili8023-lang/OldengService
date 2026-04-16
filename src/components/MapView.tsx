@@ -15,6 +15,7 @@ const categoryColors: Record<string, string> = {
   transport: '#dc2626',
   housing: '#0d9488',
   counseling: '#db2777',
+  outdoor: '#16a34a',
   default: '#6b7280',
 };
 

@@ -19,6 +19,7 @@ import MapView from '../../components/MapView';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import { VIC_POSTCODES, type VicPostcodeEntry } from '../../data/vicPostcodes';
+import { OUTDOOR_CATEGORY_VALUE, isOutdoorServiceLocation, matchesServiceCategory } from '../../lib/serviceFilters';
 import {
   buildSuburbIndex,
   distanceKm,
@@ -52,6 +53,7 @@ const categories = [
   { value: 'health', label: 'Health' },
   { value: 'food_bank', label: 'Food Banks' },
   { value: 'community_center', label: 'Community Centres' },
+  { value: OUTDOOR_CATEGORY_VALUE, label: 'Outdoor Spaces' },
   { value: 'library', label: 'Libraries' },
   { value: 'transport', label: 'Transport' },
   { value: 'housing', label: 'Housing' },
@@ -238,6 +240,9 @@ export default function MapPage() {
 
     for (const location of locations) {
       counts[location.category] = (counts[location.category] || 0) + 1;
+      if (location.category !== OUTDOOR_CATEGORY_VALUE && isOutdoorServiceLocation(location)) {
+        counts[OUTDOOR_CATEGORY_VALUE] = (counts[OUTDOOR_CATEGORY_VALUE] || 0) + 1;
+      }
     }
 
     return counts;
@@ -250,7 +255,7 @@ export default function MapPage() {
 
   const categoryFilteredLocations = useMemo(
     () => selectedCategory
-      ? locations.filter(location => location.category === selectedCategory)
+      ? locations.filter(location => matchesServiceCategory(location, selectedCategory))
       : locations,
     [locations, selectedCategory],
   );
