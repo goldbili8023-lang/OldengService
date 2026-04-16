@@ -41,6 +41,7 @@ import {
   getRouteLabel,
   getTransitModeLabel,
   loadVicTransitIndex,
+  MAX_WALKING_ROUTE_DISTANCE_KM,
   type TransitLineOption,
   type TransitMode,
   type TransitStopOption,
@@ -98,6 +99,24 @@ function formatDistance(origin: [number, number] | null, location: ServiceLocati
 
   const distance = distanceKm(origin, location);
   return distance < 1 ? `${Math.round(distance * 1000)} m away` : `${distance.toFixed(1)} km away`;
+}
+
+function formatWalkingRouteError(error: unknown): string {
+  const message = error instanceof Error ? error.message : '';
+
+  if (message.includes('too far')) {
+    return 'This service is too far from your current location to calculate a walking route. Nearby transport lines are still shown.';
+  }
+
+  if (message.includes('not configured')) {
+    return 'Walking route service is not configured yet. Nearby transport lines are still shown.';
+  }
+
+  if (message && !message.includes('non-2xx status code')) {
+    return `${message} Nearby transport lines are still shown.`;
+  }
+
+  return 'Walking route is unavailable right now. Nearby transport lines are still shown.';
 }
 
 function formatPostcodeLabel(entry: VicPostcodeEntry): string {
@@ -373,6 +392,10 @@ export default function MapPage() {
 
     let cancelled = false;
     const destination: Coordinates = [selectedLocation.latitude, selectedLocation.longitude];
+    const directDistanceKm = distanceKm(userLocation, selectedLocation);
+    const walkingRoutePromise = directDistanceKm > MAX_WALKING_ROUTE_DISTANCE_KM
+      ? Promise.reject(new Error('Walking route is too far to calculate.'))
+      : fetchWalkingRoute(userLocation, destination);
 
     transportRequestKeyRef.current = requestKey;
     setTransportLoading(true);
@@ -382,7 +405,7 @@ export default function MapPage() {
     setTransitLinesError('');
 
     Promise.allSettled([
-      fetchWalkingRoute(userLocation, destination),
+      walkingRoutePromise,
       loadVicTransitIndex().then(index => findRelevantTransitLines(destination, index)),
     ]).then(([routeResult, transitResult]) => {
       if (cancelled) return;
@@ -390,7 +413,7 @@ export default function MapPage() {
       if (routeResult.status === 'fulfilled') {
         setWalkingRoute(routeResult.value);
       } else {
-        setWalkingRouteError('Walking route is unavailable right now. Nearby transport lines are still shown.');
+        setWalkingRouteError(formatWalkingRouteError(routeResult.reason));
       }
 
       if (transitResult.status === 'fulfilled') {

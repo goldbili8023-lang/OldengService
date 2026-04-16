@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabaseAnonKey, supabaseUrl } from './supabase';
 import { distanceKm, type Coordinates } from './serviceSearch';
 
 export type TransitMode = 'train' | 'tram' | 'bus';
@@ -52,6 +52,7 @@ export interface TransitLineOption {
 }
 
 const TRANSIT_INDEX_URL = '/data/vic-transit-index.json';
+export const MAX_WALKING_ROUTE_DISTANCE_KM = 80;
 const TRANSIT_SEARCH_RADIUS_METERS: Record<TransitMode, number> = {
   train: 1200,
   tram: 1200,
@@ -69,19 +70,50 @@ export async function fetchWalkingRoute(
   origin: Coordinates,
   destination: Coordinates,
 ): Promise<WalkingRouteResult> {
-  const { data, error } = await supabase.functions.invoke<WalkingRouteResult>('walking-route', {
-    body: { origin, destination },
+  const response = await fetch(`${supabaseUrl}/functions/v1/walking-route`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${supabaseAnonKey}`,
+      apikey: supabaseAnonKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ origin, destination }),
   });
+  const payload = await response.json().catch(() => null) as Partial<WalkingRouteResult> & {
+    error?: unknown;
+    message?: unknown;
+  } | null;
 
-  if (error) {
-    throw new Error(error.message || 'Walking route is unavailable right now.');
+  if (!response.ok) {
+    throw new Error(getFunctionErrorMessage(payload) || 'Walking route is unavailable right now.');
   }
 
-  if (!data || data.path.length < 2) {
+  const distanceMeters = Number(payload?.distanceMeters);
+  const durationSeconds = Number(payload?.durationSeconds);
+
+  if (
+    !payload
+    || !Array.isArray(payload.path)
+    || payload.path.length < 2
+    || !Number.isFinite(distanceMeters)
+    || !Number.isFinite(durationSeconds)
+  ) {
     throw new Error('Walking route is unavailable right now.');
   }
 
-  return data;
+  return {
+    distanceMeters,
+    durationSeconds,
+    path: payload.path,
+    provider: String(payload.provider || 'OpenRouteService'),
+    fetchedAt: String(payload.fetchedAt || new Date().toISOString()),
+  };
+}
+
+function getFunctionErrorMessage(payload: { error?: unknown; message?: unknown } | null): string | null {
+  if (typeof payload?.error === 'string' && payload.error.trim()) return payload.error;
+  if (typeof payload?.message === 'string' && payload.message.trim()) return payload.message;
+  return null;
 }
 
 export async function loadVicTransitIndex(): Promise<TransitIndex> {
