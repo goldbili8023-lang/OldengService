@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Shield, Users, UserCheck } from 'lucide-react';
+import { Shield, UserCheck } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import Button from '../../components/ui/Button';
 import FormInput from '../../components/ui/FormInput';
@@ -64,18 +64,6 @@ export default function RegisterPage() {
                 </div>
               </button>
 
-              <button
-                onClick={() => handleRoleSelect('worker')}
-                className="w-full flex items-center gap-4 p-5 rounded-xl border-2 border-gray-200 hover:border-sky-500 hover:bg-sky-50 transition-all text-left group"
-              >
-                <div className="w-12 h-12 rounded-xl bg-sky-100 flex items-center justify-center group-hover:bg-sky-200 transition-colors">
-                  <Users className="w-6 h-6 text-sky-700" />
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-900 text-lg">Community Support Worker</p>
-                  <p className="text-sm text-gray-500">I manage and coordinate community services</p>
-                </div>
-              </button>
             </div>
           ) : (
             <>
