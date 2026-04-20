@@ -73,7 +73,7 @@ export default function DashboardPage() {
     }
 
     if (!navigator.geolocation) {
-      fetchWeather(-33.87, 151.21, setWeather, setSevereWeather);
+      fetchWeather(-37.8136, 144.9631, setWeather, setSevereWeather);
       return;
     }
 
