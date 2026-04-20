@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useAccessibility } from '../contexts/AccessibilityContext';
 import Modal from '../components/ui/Modal';
+import AIAssistantFloatingButton from '../components/AIAssistantFloatingButton';
 
 const navItems = [
   { to: '/senior', icon: Home, label: 'Home', end: true },
@@ -128,6 +129,8 @@ export default function SeniorLayout() {
 
         </div>
       </Modal>
+
+      <AIAssistantFloatingButton />
     </div>
   );
 }
