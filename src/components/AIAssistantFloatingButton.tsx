@@ -15,7 +15,7 @@ interface ChatMessage extends AssistantChatMessage {
 const INITIAL_MESSAGE: ChatMessage = {
   id: 'assistant-welcome',
   role: 'assistant',
-  content: 'I can help with maps, services, transport, and simple SafeConnect steps. Ask a question any time.',
+  content: 'I can help with maps, entertainment, transport, and simple SafeConnect steps. Ask a question any time.',
 };
 
 function buildMessageId(prefix: string) {
@@ -197,7 +197,7 @@ export default function AIAssistantFloatingButton() {
                 value={inputValue}
                 onChange={event => setInputValue(event.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask about services, the map, or transport..."
+                placeholder="Ask about services, entertainment, the map, or transport..."
                 className="block w-full resize-none rounded-lg border-0 px-3 py-2 text-sm text-gray-700 outline-none placeholder:text-gray-400"
               />
             </div>

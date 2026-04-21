@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Phone, Map, Dumbbell, HelpCircle,
+  Clapperboard, Phone, Map, Dumbbell, HelpCircle,
   Sun, CloudRain, CloudSnow, Cloud, AlertTriangle
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -136,13 +136,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="text-center py-4">
-              <p className="text-sm text-gray-500 mb-3">No primary contact set</p>
-              <Link
-                to="/senior/contacts"
-                className="text-sm text-teal-600 hover:text-teal-700 font-medium"
-              >
-                Add a contact
-              </Link>
+              <p className="text-sm text-gray-500">No primary contact available right now.</p>
             </div>
           )}
         </Card>
@@ -163,7 +157,7 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { to: '/senior/contacts', icon: Phone, label: 'Contacts', color: 'bg-emerald-100 text-emerald-700' },
+          { to: '/senior/entertainment', icon: Clapperboard, label: 'Entertainment', color: 'bg-rose-100 text-rose-700' },
           { to: '/senior/map', icon: Map, label: 'Nearby Services', color: 'bg-sky-100 text-sky-700' },
           { to: '/senior/exercise', icon: Dumbbell, label: 'Exercise', color: 'bg-amber-100 text-amber-700' },
           { to: '/senior/help', icon: HelpCircle, label: 'How to Use', color: 'bg-teal-100 text-teal-700' },

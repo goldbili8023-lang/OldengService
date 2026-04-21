@@ -49,6 +49,15 @@ const PAGE_HINTS = [
     ],
   },
   {
+    test: (pagePath: string) => pagePath.startsWith('/senior/entertainment'),
+    hint: 'Entertainment lets you switch between a YouTube short-video feed and a simple runner game.',
+    prompts: [
+      'How do I move to the next video?',
+      'How do I switch to the runner game?',
+      'Do I need YouTube to use this page?',
+    ],
+  },
+  {
     test: (pagePath: string) => pagePath.startsWith('/senior/help'),
     hint: 'Help gives short guides for common tasks in SafeConnect.',
     prompts: [
@@ -70,9 +79,9 @@ const PAGE_HINTS = [
     test: () => true,
     hint: 'Home shows weather, quick access to key pages, and local support summaries.',
     prompts: [
+      'How do I open Entertainment?',
       'How do I find nearby services?',
       'What can I do on the home page?',
-      'How do I use transport options?',
     ],
   },
 ];
