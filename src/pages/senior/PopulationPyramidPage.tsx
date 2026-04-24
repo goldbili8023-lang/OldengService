@@ -21,6 +21,12 @@ function formatPercentage(value: number) {
   return `${value.toFixed(1)}%`;
 }
 
+function getAxisTickClass(index: number, length: number) {
+  if (index === 0) return 'translate-x-0';
+  if (index === length - 1) return '-translate-x-full';
+  return '-translate-x-1/2';
+}
+
 export default function PopulationPyramidPage() {
   const defaultYearIndex = Math.max(
     populationPyramidSeries.findIndex(series => series.year === defaultPopulationPyramidYear),
@@ -203,28 +209,32 @@ export default function PopulationPyramidPage() {
               </div>
 
               <div className="mt-3 grid grid-cols-[1fr_56px_1fr] gap-2 text-xs text-gray-500">
-                <div className="relative h-6">
-                  {[...populationPyramidTicks].reverse().map(tick => (
-                    <span
-                      key={`left-${tick}`}
-                      className="absolute -translate-x-1/2"
-                      style={{ left: `${100 - (tick / populationPyramidSideMax) * 100}%` }}
-                    >
-                      {formatPopulation(tick)}
-                    </span>
-                  ))}
+                <div className="h-6 px-2.5">
+                  <div className="relative h-full">
+                    {[...populationPyramidTicks].reverse().map((tick, index, ticks) => (
+                      <span
+                        key={`left-${tick}`}
+                        className={`absolute ${getAxisTickClass(index, ticks.length)}`}
+                        style={{ left: `${100 - (tick / populationPyramidSideMax) * 100}%` }}
+                      >
+                        {formatPopulation(tick)}
+                      </span>
+                    ))}
+                  </div>
                 </div>
                 <div />
-                <div className="relative h-6">
-                  {populationPyramidTicks.map(tick => (
-                    <span
-                      key={`right-${tick}`}
-                      className="absolute -translate-x-1/2"
-                      style={{ left: `${(tick / populationPyramidSideMax) * 100}%` }}
-                    >
-                      {formatPopulation(tick)}
-                    </span>
-                  ))}
+                <div className="h-6 px-2.5">
+                  <div className="relative h-full">
+                    {populationPyramidTicks.map((tick, index, ticks) => (
+                      <span
+                        key={`right-${tick}`}
+                        className={`absolute ${getAxisTickClass(index, ticks.length)}`}
+                        style={{ left: `${(tick / populationPyramidSideMax) * 100}%` }}
+                      >
+                        {formatPopulation(tick)}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </div>
 
