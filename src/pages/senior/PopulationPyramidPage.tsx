@@ -27,6 +27,12 @@ function getAxisTickClass(index: number, length: number) {
   return '-translate-x-1/2';
 }
 
+function getCompressedAxisPosition(ratio: number) {
+  const min = 8;
+  const max = 92;
+  return min + (max - min) * ratio;
+}
+
 export default function PopulationPyramidPage() {
   const defaultYearIndex = Math.max(
     populationPyramidSeries.findIndex(series => series.year === defaultPopulationPyramidYear),
@@ -215,7 +221,11 @@ export default function PopulationPyramidPage() {
                       <span
                         key={`left-${tick}`}
                         className={`absolute ${getAxisTickClass(index, ticks.length)}`}
-                        style={{ left: `${100 - (tick / populationPyramidSideMax) * 100}%` }}
+                        style={{
+                          left: `${getCompressedAxisPosition(
+                            1 - tick / populationPyramidSideMax,
+                          )}%`,
+                        }}
                       >
                         {formatPopulation(tick)}
                       </span>
@@ -229,7 +239,11 @@ export default function PopulationPyramidPage() {
                       <span
                         key={`right-${tick}`}
                         className={`absolute ${getAxisTickClass(index, ticks.length)}`}
-                        style={{ left: `${(tick / populationPyramidSideMax) * 100}%` }}
+                        style={{
+                          left: `${getCompressedAxisPosition(
+                            tick / populationPyramidSideMax,
+                          )}%`,
+                        }}
                       >
                         {formatPopulation(tick)}
                       </span>
