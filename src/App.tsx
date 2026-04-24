@@ -10,6 +10,7 @@ import MedicationsPage from './pages/senior/MedicationsPage';
 import MapPage from './pages/senior/MapPage';
 import ExercisePage from './pages/senior/ExercisePage';
 import HelpPage from './pages/senior/HelpPage';
+import PopulationPyramidPage from './pages/senior/PopulationPyramidPage';
 import WorkerDashboard from './pages/worker/WorkerDashboard';
 import DirectoryPage from './pages/worker/DirectoryPage';
 import WorkerMapPage from './pages/worker/WorkerMapPage';
@@ -32,6 +33,7 @@ function AppRoutes() {
         <Route path="map" element={<MapPage />} />
         <Route path="exercise" element={<ExercisePage />} />
         <Route path="help" element={<HelpPage />} />
+        <Route path="population" element={<PopulationPyramidPage />} />
       </Route>
 
       <Route path="/worker" element={<WorkerLayout />}>
