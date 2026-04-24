@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Clapperboard, Phone, Map, Dumbbell, HelpCircle,
-  Sun, CloudRain, CloudSnow, Cloud, AlertTriangle, BarChart3
+  Sun, Moon, CloudRain, CloudSnow, Cloud, AlertTriangle, BarChart3
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -13,10 +13,15 @@ interface WeatherData {
   temp: number;
   description: string;
   code: number;
+  isDay: boolean;
 }
 
-function getWeatherIcon(code: number) {
-  if (code <= 1) return <Sun className="w-8 h-8 text-amber-500" />;
+function getWeatherIcon(code: number, isDay: boolean) {
+  if (code <= 1) {
+    return isDay
+      ? <Sun className="w-8 h-8 text-amber-500" />
+      : <Moon className="w-8 h-8 text-indigo-500" />;
+  }
   if (code <= 3) return <Cloud className="w-8 h-8 text-gray-400" />;
   if (code <= 67) return <CloudRain className="w-8 h-8 text-sky-500" />;
   if (code <= 77) return <CloudSnow className="w-8 h-8 text-sky-300" />;
@@ -46,6 +51,7 @@ function fetchWeather(latitude: number, longitude: number, onWeather: (weather: 
           temp: d.current_weather.temperature,
           description: getWeatherLabel(d.current_weather.weathercode),
           code: d.current_weather.weathercode,
+          isDay: d.current_weather.is_day !== 0,
         });
         onSevere(d.current_weather.weathercode >= 80);
       }
@@ -145,7 +151,7 @@ export default function DashboardPage() {
           <Card>
             <h3 className="font-semibold text-gray-900 mb-4">Current Weather</h3>
             <div className="flex items-center gap-4">
-              {getWeatherIcon(weather.code)}
+              {getWeatherIcon(weather.code, weather.isDay)}
               <div>
                 <p className="text-2xl font-bold text-gray-900">{weather.temp}&deg;C</p>
                 <p className="text-sm text-gray-500">{weather.description}</p>
