@@ -27,12 +27,6 @@ function getAxisTickClass(index: number, length: number) {
   return '-translate-x-1/2';
 }
 
-function getCompressedAxisPosition(ratio: number) {
-  const min = 8;
-  const max = 92;
-  return min + (max - min) * ratio;
-}
-
 export default function PopulationPyramidPage() {
   const defaultYearIndex = Math.max(
     populationPyramidSeries.findIndex(series => series.year === defaultPopulationPyramidYear),
@@ -162,7 +156,7 @@ export default function PopulationPyramidPage() {
                   className="rounded-2xl border border-slate-100 bg-slate-50/70 px-2.5 py-2.5"
                   style={{
                     backgroundImage: 'linear-gradient(to right, rgba(148,163,184,0.18) 1px, transparent 1px)',
-                    backgroundSize: '20% 100%',
+                    backgroundSize: '25% 100%',
                   }}
                 >
                   <div className="space-y-px">
@@ -197,7 +191,7 @@ export default function PopulationPyramidPage() {
                   className="rounded-2xl border border-slate-100 bg-slate-50/70 px-2.5 py-2.5"
                   style={{
                     backgroundImage: 'linear-gradient(to right, rgba(148,163,184,0.18) 1px, transparent 1px)',
-                    backgroundSize: '20% 100%',
+                    backgroundSize: '25% 100%',
                   }}
                 >
                   <div className="space-y-px">
@@ -221,11 +215,7 @@ export default function PopulationPyramidPage() {
                       <span
                         key={`left-${tick}`}
                         className={`absolute ${getAxisTickClass(index, ticks.length)}`}
-                        style={{
-                          left: `${getCompressedAxisPosition(
-                            1 - tick / populationPyramidSideMax,
-                          )}%`,
-                        }}
+                        style={{ left: `${100 - (tick / populationPyramidSideMax) * 100}%` }}
                       >
                         {formatPopulation(tick)}
                       </span>
@@ -239,11 +229,7 @@ export default function PopulationPyramidPage() {
                       <span
                         key={`right-${tick}`}
                         className={`absolute ${getAxisTickClass(index, ticks.length)}`}
-                        style={{
-                          left: `${getCompressedAxisPosition(
-                            tick / populationPyramidSideMax,
-                          )}%`,
-                        }}
+                        style={{ left: `${(tick / populationPyramidSideMax) * 100}%` }}
                       >
                         {formatPopulation(tick)}
                       </span>
