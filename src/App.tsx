@@ -6,6 +6,7 @@ import WorkerLayout from './layouts/WorkerLayout';
 import DashboardPage from './pages/senior/DashboardPage';
 import ContactsPage from './pages/senior/ContactsPage';
 import EntertainmentPage from './pages/senior/EntertainmentPage';
+import HeatSafePage from './pages/senior/HeatSafePage';
 import MedicationsPage from './pages/senior/MedicationsPage';
 import MapPage from './pages/senior/MapPage';
 import ExercisePage from './pages/senior/ExercisePage';
@@ -29,6 +30,7 @@ function AppRoutes() {
         <Route index element={<DashboardPage />} />
         <Route path="contacts" element={<ContactsPage />} />
         <Route path="entertainment" element={<EntertainmentPage />} />
+        <Route path="heat-safe" element={<HeatSafePage />} />
         <Route path="medications" element={<MedicationsPage />} />
         <Route path="map" element={<MapPage />} />
         <Route path="exercise" element={<ExercisePage />} />

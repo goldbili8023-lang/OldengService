@@ -7,14 +7,8 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import Card from '../../components/ui/Card';
+import { buildHeatAdvisory, fetchCurrentWeather, getUserCoordinatesOrFallback, type WeatherData } from '../../lib/weather';
 import type { EmergencyContact } from '../../types';
-
-interface WeatherData {
-  temp: number;
-  description: string;
-  code: number;
-  isDay: boolean;
-}
 
 function getWeatherIcon(code: number, isDay: boolean) {
   if (code <= 1) {
@@ -28,42 +22,11 @@ function getWeatherIcon(code: number, isDay: boolean) {
   return <CloudRain className="w-8 h-8 text-sky-600" />;
 }
 
-function getWeatherLabel(code: number) {
-  if (code === 0) return 'Clear sky';
-  if (code <= 3) return 'Partly cloudy';
-  if (code <= 48) return 'Foggy';
-  if (code <= 57) return 'Drizzle';
-  if (code <= 67) return 'Rain';
-  if (code <= 77) return 'Snow';
-  if (code <= 82) return 'Rain showers';
-  if (code <= 86) return 'Snow showers';
-  return 'Thunderstorm';
-}
-
-function fetchWeather(latitude: number, longitude: number, onWeather: (weather: WeatherData) => void, onSevere: (severe: boolean) => void) {
-  fetch(
-    `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true`
-  )
-    .then(r => r.json())
-    .then(d => {
-      if (d.current_weather) {
-        onWeather({
-          temp: d.current_weather.temperature,
-          description: getWeatherLabel(d.current_weather.weathercode),
-          code: d.current_weather.weathercode,
-          isDay: d.current_weather.is_day !== 0,
-        });
-        onSevere(d.current_weather.weathercode >= 80);
-      }
-    })
-    .catch(() => {});
-}
-
 export default function DashboardPage() {
   const { profile, user } = useAuth();
   const [primaryContact, setPrimaryContact] = useState<EmergencyContact | null>(null);
   const [weather, setWeather] = useState<WeatherData | null>(null);
-  const [severeWeather, setSevereWeather] = useState(false);
+  const [usedWeatherFallback, setUsedWeatherFallback] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -78,19 +41,26 @@ export default function DashboardPage() {
       setPrimaryContact(null);
     }
 
-    if (!navigator.geolocation) {
-      fetchWeather(-37.8136, 144.9631, setWeather, setSevereWeather);
-      return;
-    }
+    let cancelled = false;
 
-    navigator.geolocation.getCurrentPosition(
-      pos => {
-        fetchWeather(pos.coords.latitude, pos.coords.longitude, setWeather, setSevereWeather);
-      },
-      () => {
-        fetchWeather(-33.87, 151.21, setWeather, setSevereWeather);
-      }
-    );
+    getUserCoordinatesOrFallback()
+      .then(async ({ coordinates, usedFallback }) => {
+        const nextWeather = await fetchCurrentWeather(coordinates[0], coordinates[1]);
+        if (cancelled) return;
+
+        setUsedWeatherFallback(usedFallback);
+        setWeather(nextWeather);
+      })
+      .catch(() => {
+        if (cancelled) return;
+
+        setUsedWeatherFallback(true);
+        setWeather(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
 
   const greeting = (() => {
@@ -99,6 +69,13 @@ export default function DashboardPage() {
     if (h < 17) return 'Good afternoon';
     return 'Good evening';
   })();
+  const severeWeather = weather ? weather.code >= 80 : false;
+  const heatAdvisory = weather ? buildHeatAdvisory(weather.temp) : null;
+  const weatherCardTone = heatAdvisory?.level === 'hot'
+    ? 'border-red-200 bg-red-50'
+    : heatAdvisory?.level === 'warm'
+      ? 'border-amber-200 bg-amber-50'
+      : '';
 
   return (
     <div className="space-y-6">
@@ -148,13 +125,76 @@ export default function DashboardPage() {
         </Card>
 
         {weather && (
+          <Card className={weatherCardTone}>
+            <h3 className="font-semibold text-gray-900 mb-4">Current Weather</h3>
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-center gap-4">
+                {getWeatherIcon(weather.code, weather.isDay)}
+                <div>
+                  <p className="text-2xl font-bold text-gray-900">{weather.temp}&deg;C</p>
+                  <p className="text-sm text-gray-500">{weather.description}</p>
+                  {usedWeatherFallback && (
+                    <p className="mt-1 text-xs text-gray-500">Using a general Melbourne reading because location is off.</p>
+                  )}
+                </div>
+              </div>
+
+              {heatAdvisory && (
+                <div
+                  className={`rounded-xl border px-4 py-3 md:max-w-xs ${
+                    heatAdvisory.level === 'hot'
+                      ? 'border-red-200 bg-white/70'
+                      : heatAdvisory.level === 'warm'
+                        ? 'border-amber-200 bg-white/70'
+                        : 'border-gray-200 bg-white/70'
+                  }`}
+                >
+                  <p className={`text-sm font-semibold ${
+                    heatAdvisory.level === 'hot'
+                      ? 'text-red-700'
+                      : heatAdvisory.level === 'warm'
+                        ? 'text-amber-800'
+                        : 'text-gray-900'
+                  }`}
+                  >
+                    {heatAdvisory.headline}
+                  </p>
+                  <p className="mt-1 text-sm text-gray-600">{heatAdvisory.body}</p>
+                  {heatAdvisory.showIndoorSuggestions && heatAdvisory.ctaLabel && (
+                    <Link
+                      to="/senior/heat-safe"
+                      className={`mt-3 inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium transition-colors ${
+                        heatAdvisory.level === 'hot'
+                          ? 'bg-red-600 text-white hover:bg-red-700'
+                          : 'bg-amber-500 text-white hover:bg-amber-600'
+                      }`}
+                    >
+                      {heatAdvisory.ctaLabel}
+                    </Link>
+                  )}
+                </div>
+              )}
+            </div>
+          </Card>
+        )}
+
+        {!weather && (
           <Card>
             <h3 className="font-semibold text-gray-900 mb-4">Current Weather</h3>
-            <div className="flex items-center gap-4">
-              {getWeatherIcon(weather.code, weather.isDay)}
+            <div className="flex items-center gap-3 text-sm text-gray-500">
+              <Cloud className="h-8 w-8 text-gray-300" />
+              <p>Weather is unavailable right now.</p>
+            </div>
+          </Card>
+        )}
+
+        {heatAdvisory?.level === 'hot' && !severeWeather && (
+          <Card className="md:col-span-2 border-red-200 bg-red-50">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-2xl font-bold text-gray-900">{weather.temp}&deg;C</p>
-                <p className="text-sm text-gray-500">{weather.description}</p>
+                <h3 className="font-semibold text-red-800">Heat Safety</h3>
+                <p className="text-sm text-red-700">High temperatures today may make outdoor trips uncomfortable or unsafe. Choose indoor places if you need to go out.</p>
               </div>
             </div>
           </Card>
