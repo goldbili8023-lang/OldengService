@@ -30,6 +30,8 @@ interface GeminiResponsePayload {
   }>;
 }
 
+const DEFAULT_GEMINI_MODEL = 'gemini-3-flash-preview';
+
 function getPageContext(pagePath: string): string {
   if (pagePath.startsWith('/senior/map')) {
     return 'The map page helps older adults search community services, use Near Me, filter categories, and check transport options.';
@@ -82,6 +84,7 @@ Deno.serve(async req => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    const geminiModel = Deno.env.get('GEMINI_MODEL')?.trim() || DEFAULT_GEMINI_MODEL;
 
     const body = await req.json();
     const message = typeof body?.message === 'string' ? body.message.trim() : '';
@@ -122,7 +125,7 @@ Deno.serve(async req => {
     ];
 
     const geminiResponse = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
+      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(geminiModel)}:generateContent`,
       {
         method: 'POST',
         headers: {
