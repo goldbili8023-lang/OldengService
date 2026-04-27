@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
 import {
   AlertCircle,
   Bus,
@@ -20,11 +19,6 @@ import MapView from '../../components/MapView';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import { VIC_POSTCODES, type VicPostcodeEntry } from '../../data/vicPostcodes';
-import {
-  HEAT_SAFE_DEFAULT_ANCHOR_LABEL,
-  HEAT_SAFE_INDOOR_CATEGORY_VALUE,
-  isHeatSafeIndoorLocation,
-} from '../../lib/heatSafe';
 import { OUTDOOR_CATEGORY_VALUE, isOutdoorServiceLocation, matchesServiceCategory } from '../../lib/serviceFilters';
 import {
   buildSuburbIndex,
@@ -60,7 +54,6 @@ const categories = [
   { value: 'health', label: 'Health' },
   { value: 'food_bank', label: 'Food Banks' },
   { value: 'community_center', label: 'Community Centres' },
-  { value: HEAT_SAFE_INDOOR_CATEGORY_VALUE, label: 'Cool Indoor' },
   { value: OUTDOOR_CATEGORY_VALUE, label: 'Outdoor Spaces' },
   { value: 'library', label: 'Libraries' },
   { value: 'transport', label: 'Transport' },
@@ -137,7 +130,6 @@ function getTransitModeIcon(mode: TransitMode) {
 }
 
 export default function MapPage() {
-  const [searchParams] = useSearchParams();
   const [locations, setLocations] = useState<ServiceLocation[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
@@ -159,25 +151,7 @@ export default function MapPage() {
   const [transitLinesError, setTransitLinesError] = useState('');
   const [transportTargetLocationId, setTransportTargetLocationId] = useState<string | null>(null);
   const transportRequestKeyRef = useRef('');
-  const querySelectionRef = useRef('');
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const queryString = searchParams.toString();
-  const heatSafePresetActive = searchParams.get('preset') === 'heat-safe';
-  const querySelectedLocationId = searchParams.get('selected');
-  const queryOpensTransport = searchParams.get('transport') === '1';
-
-  const restoreHeatSafeDefaultView = () => {
-    setRadiusKm(NEARBY_RADIUS_KM);
-
-    if (userLocation) {
-      setVisibleMode('nearby');
-      setSearchAnchor(null);
-      return;
-    }
-
-    setVisibleMode('suburb');
-    setSearchAnchor({ label: HEAT_SAFE_DEFAULT_ANCHOR_LABEL, center: DEFAULT_MAP_CENTER });
-  };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -236,11 +210,6 @@ export default function MapPage() {
     setSuggestionsOpen(false);
     setSearchNotice('');
 
-    if (heatSafePresetActive) {
-      restoreHeatSafeDefaultView();
-      return;
-    }
-
     if (userLocation) {
       setVisibleMode('nearby');
       setRadiusKm(NEARBY_RADIUS_KM);
@@ -285,48 +254,11 @@ export default function MapPage() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!heatSafePresetActive) return;
-
-    setSelectedCategory(currentCategory =>
-      currentCategory === HEAT_SAFE_INDOOR_CATEGORY_VALUE ? currentCategory : HEAT_SAFE_INDOOR_CATEGORY_VALUE,
-    );
-  }, [heatSafePresetActive]);
-
-  useEffect(() => {
-    if (!heatSafePresetActive || loading || activeSearch) return;
-
-    if (userLocation) {
-      if (visibleMode !== 'nearby' || searchAnchor) {
-        setVisibleMode('nearby');
-        setRadiusKm(NEARBY_RADIUS_KM);
-        setSearchAnchor(null);
-      }
-      return;
-    }
-
-    const hasHeatSafeAnchor = searchAnchor?.label === HEAT_SAFE_DEFAULT_ANCHOR_LABEL
-      && searchAnchor.center[0] === DEFAULT_MAP_CENTER[0]
-      && searchAnchor.center[1] === DEFAULT_MAP_CENTER[1];
-
-    if (visibleMode !== 'suburb' || !hasHeatSafeAnchor) {
-      setVisibleMode('suburb');
-      setRadiusKm(NEARBY_RADIUS_KM);
-      setSearchAnchor({ label: HEAT_SAFE_DEFAULT_ANCHOR_LABEL, center: DEFAULT_MAP_CENTER });
-    }
-  }, [activeSearch, heatSafePresetActive, loading, searchAnchor, userLocation, visibleMode]);
-
   const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = {
-      '': locations.length,
-      [HEAT_SAFE_INDOOR_CATEGORY_VALUE]: 0,
-    };
+    const counts: Record<string, number> = { '': locations.length };
 
     for (const location of locations) {
       counts[location.category] = (counts[location.category] || 0) + 1;
-      if (isHeatSafeIndoorLocation(location)) {
-        counts[HEAT_SAFE_INDOOR_CATEGORY_VALUE] = (counts[HEAT_SAFE_INDOOR_CATEGORY_VALUE] || 0) + 1;
-      }
       if (location.category !== OUTDOOR_CATEGORY_VALUE && isOutdoorServiceLocation(location)) {
         counts[OUTDOOR_CATEGORY_VALUE] = (counts[OUTDOOR_CATEGORY_VALUE] || 0) + 1;
       }
@@ -340,15 +272,12 @@ export default function MapPage() {
     [categoryCounts],
   );
 
-  const categoryFilteredLocations = useMemo(() => {
-    if (!selectedCategory) return locations;
-
-    if (selectedCategory === HEAT_SAFE_INDOOR_CATEGORY_VALUE) {
-      return locations.filter(isHeatSafeIndoorLocation);
-    }
-
-    return locations.filter(location => matchesServiceCategory(location, selectedCategory));
-  }, [locations, selectedCategory]);
+  const categoryFilteredLocations = useMemo(
+    () => selectedCategory
+      ? locations.filter(location => matchesServiceCategory(location, selectedCategory))
+      : locations,
+    [locations, selectedCategory],
+  );
 
   const suburbIndex = useMemo(
     () => buildSuburbIndex(categoryFilteredLocations),
@@ -368,7 +297,6 @@ export default function MapPage() {
 
     return [...postcodeSuggestions, ...suburbSuggestions, ...serviceSuggestions].slice(0, 8);
   }, [categoryFilteredLocations, searchQuery, suburbIndex, suggestionsOpen, userLocation]);
-  const heatSafeCategoryActive = selectedCategory === HEAT_SAFE_INDOOR_CATEGORY_VALUE;
 
   const displayResult = useMemo<DisplayResult>(() => {
     if (visibleMode === 'prompt') {
@@ -440,40 +368,6 @@ export default function MapPage() {
   }, [displayResult.visibleLocations, selectedLocation]);
 
   useEffect(() => {
-    if (!querySelectedLocationId) {
-      querySelectionRef.current = '';
-      return;
-    }
-
-    if (querySelectionRef.current === queryString) return;
-
-    const querySelectedLocation = displayResult.visibleLocations.find(location => location.id === querySelectedLocationId)
-      ?? categoryFilteredLocations.find(location => location.id === querySelectedLocationId)
-      ?? locations.find(location => location.id === querySelectedLocationId);
-
-    if (!querySelectedLocation) return;
-
-    setSelectedLocation(querySelectedLocation);
-
-    if (queryOpensTransport) {
-      setTransportTargetLocationId(querySelectedLocation.id);
-      setTransportPanelOpen(true);
-    } else {
-      setTransportPanelOpen(false);
-      setTransportTargetLocationId(null);
-    }
-
-    querySelectionRef.current = queryString;
-  }, [
-    categoryFilteredLocations,
-    displayResult.visibleLocations,
-    locations,
-    queryOpensTransport,
-    querySelectedLocationId,
-    queryString,
-  ]);
-
-  useEffect(() => {
     setTransportPanelOpen(false);
     setTransportLoading(false);
     setWalkingRoute(null);
@@ -537,9 +431,6 @@ export default function MapPage() {
   }, [selectedLocation, transportPanelOpen, transportTargetLocationId, userLocation]);
 
   useEffect(() => {
-    const pluralLabel = heatSafeCategoryActive ? 'indoor places' : 'services';
-    const singularLabel = heatSafeCategoryActive ? 'indoor place' : 'service';
-
     if (loading) {
       setStatusMessage('Loading services...');
       return;
@@ -551,94 +442,76 @@ export default function MapPage() {
     }
 
     if (visibleMode === 'prompt') {
-      setStatusMessage(
-        heatSafeCategoryActive
-          ? 'Use your location or search to show cooler indoor places.'
-          : 'Use your location or search to show nearby services.',
-      );
+      setStatusMessage('Use your location or search to show nearby services.');
       return;
     }
 
     if (visibleMode === 'text') {
-      setStatusMessage(
-        `${displayResult.visibleLocations.length} ${heatSafeCategoryActive ? 'indoor result' : 'result'}${displayResult.visibleLocations.length === 1 ? '' : 's'} for "${activeSearch}".`,
-      );
+      setStatusMessage(`${displayResult.visibleLocations.length} result${displayResult.visibleLocations.length === 1 ? '' : 's'} for "${activeSearch}".`);
       return;
     }
 
     if (visibleMode === 'postcode') {
       if (!searchAnchor) {
-        setStatusMessage(
-          heatSafeCategoryActive
-            ? 'Search for a VIC postcode to show cooler indoor places.'
-            : 'Search for a VIC postcode to show nearby services.',
-        );
+        setStatusMessage('Search for a VIC postcode to show nearby services.');
         return;
       }
 
       if (displayResult.totalBeforeCap === 0) {
-        setStatusMessage(`No ${pluralLabel} found around ${searchAnchor.label} within ${displayResult.radiusKm ?? NEARBY_RADIUS_KM} km.`);
+        setStatusMessage(`No services found around ${searchAnchor.label} within ${displayResult.radiusKm ?? NEARBY_RADIUS_KM} km.`);
         return;
       }
 
       if (displayResult.capped) {
-        setStatusMessage(`Showing nearest ${displayResult.visibleLocations.length} of ${displayResult.totalBeforeCap} ${pluralLabel} around ${searchAnchor.label} within ${displayResult.radiusKm} km.`);
+        setStatusMessage(`Showing nearest ${displayResult.visibleLocations.length} of ${displayResult.totalBeforeCap} services around ${searchAnchor.label} within ${displayResult.radiusKm} km.`);
         return;
       }
 
-      setStatusMessage(`Showing ${displayResult.visibleLocations.length} ${pluralLabel} around ${searchAnchor.label} within ${displayResult.radiusKm} km.`);
+      setStatusMessage(`Showing ${displayResult.visibleLocations.length} services around ${searchAnchor.label} within ${displayResult.radiusKm} km.`);
       return;
     }
 
     if (visibleMode === 'suburb') {
       if (!searchAnchor) {
-        setStatusMessage(
-          heatSafeCategoryActive
-            ? 'Search for a suburb to show cooler indoor places.'
-            : 'Search for a suburb to show nearby services.',
-        );
+        setStatusMessage('Search for a suburb to show nearby services.');
         return;
       }
 
       if (displayResult.totalBeforeCap === 0) {
-        setStatusMessage(`No ${pluralLabel} found around ${searchAnchor.label} within ${displayResult.radiusKm ?? NEARBY_RADIUS_KM} km.`);
+        setStatusMessage(`No services found around ${searchAnchor.label} within ${displayResult.radiusKm ?? NEARBY_RADIUS_KM} km.`);
         return;
       }
 
       if (displayResult.capped) {
-        setStatusMessage(`Showing nearest ${displayResult.visibleLocations.length} of ${displayResult.totalBeforeCap} ${pluralLabel} around ${searchAnchor.label} within ${displayResult.radiusKm} km.`);
+        setStatusMessage(`Showing nearest ${displayResult.visibleLocations.length} of ${displayResult.totalBeforeCap} services around ${searchAnchor.label} within ${displayResult.radiusKm} km.`);
         return;
       }
 
-      setStatusMessage(`Showing ${displayResult.visibleLocations.length} ${pluralLabel} around ${searchAnchor.label} within ${displayResult.radiusKm} km.`);
+      setStatusMessage(`Showing ${displayResult.visibleLocations.length} services around ${searchAnchor.label} within ${displayResult.radiusKm} km.`);
       return;
     }
 
     if (!userLocation) {
-      setStatusMessage(
-        heatSafeCategoryActive
-          ? 'Use your location to show cooler indoor places nearby.'
-          : 'Use your location to show nearby services.',
-      );
+      setStatusMessage('Use your location to show nearby services.');
       return;
     }
 
     if (displayResult.totalBeforeCap === 0) {
-      setStatusMessage(`No ${pluralLabel} found within ${displayResult.radiusKm ?? NEARBY_RADIUS_KM} km.`);
+      setStatusMessage(`No services found within ${displayResult.radiusKm ?? NEARBY_RADIUS_KM} km.`);
       return;
     }
 
     if (displayResult.capped) {
-      setStatusMessage(`Showing nearest ${displayResult.visibleLocations.length} of ${displayResult.totalBeforeCap} ${pluralLabel} within ${displayResult.radiusKm} km.`);
+      setStatusMessage(`Showing nearest ${displayResult.visibleLocations.length} of ${displayResult.totalBeforeCap} services within ${displayResult.radiusKm} km.`);
       return;
     }
 
     if (displayResult.expanded) {
-      setStatusMessage(`Showing ${displayResult.visibleLocations.length} ${pluralLabel} within ${displayResult.radiusKm} km.`);
+      setStatusMessage(`Showing ${displayResult.visibleLocations.length} services within ${displayResult.radiusKm} km.`);
       return;
     }
 
-    setStatusMessage(`Showing ${displayResult.visibleLocations.length} nearby ${displayResult.visibleLocations.length === 1 ? singularLabel : pluralLabel} within ${displayResult.radiusKm} km.`);
+    setStatusMessage(`Showing ${displayResult.visibleLocations.length} nearby service${displayResult.visibleLocations.length === 1 ? '' : 's'} within ${displayResult.radiusKm} km.`);
   }, [
     activeSearch,
     displayResult.capped,
@@ -646,7 +519,6 @@ export default function MapPage() {
     displayResult.radiusKm,
     displayResult.totalBeforeCap,
     displayResult.visibleLocations.length,
-    heatSafeCategoryActive,
     loading,
     searchAnchor,
     searchNotice,
@@ -919,13 +791,9 @@ export default function MapPage() {
           {visibleMode === 'prompt' && (
             <div className="absolute inset-0 z-[400] flex items-center justify-center bg-white/40 p-4">
               <div className="max-w-md rounded-lg border border-white/80 bg-white/95 p-5 text-center shadow-sm">
-                <h2 className="text-lg font-semibold text-gray-900">
-                  {heatSafeCategoryActive ? 'Start with cooler indoor places' : 'Start with nearby services'}
-                </h2>
+                <h2 className="text-lg font-semibold text-gray-900">Start with nearby services</h2>
                 <p className="mt-2 text-sm text-gray-600">
-                  {heatSafeCategoryActive
-                    ? 'Use your location or search for a postcode, suburb, service, or address before indoor place suggestions appear on the map.'
-                    : 'Use your location or search for a postcode, suburb, service, or address before points appear on the map.'}
+                  Use your location or search for a postcode, suburb, service, or address before points appear on the map.
                 </p>
                 <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-center">
                   <Button type="button" size="md" onClick={handleNearMe}>
@@ -1096,9 +964,7 @@ export default function MapPage() {
 
       <div className="flex items-center gap-2 text-sm text-gray-500">
         <MapPin className="w-4 h-4" />
-        {displayResult.visibleLocations.length} {heatSafeCategoryActive
-          ? displayResult.visibleLocations.length === 1 ? 'indoor place' : 'indoor places'
-          : displayResult.visibleLocations.length === 1 ? 'service' : 'services'} shown
+        {displayResult.visibleLocations.length} service{displayResult.visibleLocations.length !== 1 ? 's' : ''} shown
       </div>
     </div>
   );

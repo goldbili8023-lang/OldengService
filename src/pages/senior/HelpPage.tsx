@@ -1,30 +1,44 @@
 import { useState } from 'react';
 import { useEffect } from 'react';
-import { ChevronDown, Clapperboard, Map, HelpCircle, Settings } from 'lucide-react';
+import { ChevronDown, Phone, Pill, Map, Dumbbell, HelpCircle, Settings } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import Card from '../../components/ui/Card';
 import type { Tutorial } from '../../types';
 
 const featureIcons: Record<string, React.ElementType> = {
-  entertainment: Clapperboard,
+  contacts: Phone,
+  medications: Pill,
   map: Map,
+  exercise: Dumbbell,
   help: HelpCircle,
   settings: Settings,
 };
 
 const defaultGuides = [
   {
-    feature_name: 'entertainment',
-    title: 'How to Use Entertainment',
+    feature_name: 'contacts',
+    title: 'How to Use Emergency Contacts',
     steps: [
-      'Go to the "Entertainment" tab in the navigation.',
-      'Leave it on "Short Videos" to browse public YouTube clips.',
-      'On a computer, use your mouse wheel near the viewer or press Next and Previous.',
-      'On a phone, swipe up or down inside the viewer to move through the feed.',
-      'Use the top switch to move between "Short Videos" and "Runner Game".',
-      'If a YouTube video does not load, tap "Open on YouTube" or move to the next clip.',
+      'Go to the "Contacts" tab in the bottom menu.',
+      'Tap "Add" to add a new emergency contact.',
+      'Enter their name, relationship, and phone number.',
+      'Check "Set as primary contact" if this is your main contact.',
+      'Tap "Add Contact" to save.',
+      'To call someone, tap the green "Call Now" button on their card.',
     ],
   },
+  // {
+  //   feature_name: 'medications',
+  //   title: 'How to Use Medication Reminders',
+  //   steps: [
+  //     'Go to the "Reminders" tab.',
+  //     'Tap "Add" to add a new medication.',
+  //     'Enter the medicine name, dosage, and the time you need to take it.',
+  //     'Choose how often you take it (daily, twice daily, or weekly).',
+  //     'Tap "Add Medication" to save.',
+  //     'Each day, tap the circle next to each medicine when you take it.',
+  //   ],
+  // },
   {
     feature_name: 'map',
     title: 'How to Find Nearby Services',
@@ -50,16 +64,20 @@ const defaultGuides = [
 
 const faqs = [
   {
-    q: 'Do I need a YouTube account to use Entertainment?',
-    a: 'No. SafeConnect uses public YouTube videos. Some browsers or networks may still block a few embeds.',
+    q: 'How do I call my emergency contact?',
+    a: 'Go to the Contacts page and tap the green "Call Now" button. Your phone will start a call automatically.',
   },
+  {
+    q: 'Can I have more than one emergency contact?',
+    a: 'Yes! You can add up to 5 contacts. One can be set as your primary contact, which appears on your home page.',
+  },
+  // {
+  //   q: 'How do the medication reminders work?',
+  //   a: 'You add your medications with times. Each day, you can check them off as you take them. The home page shows your progress.',
+  // },
   {
     q: 'What do the colored dots on the map mean?',
     a: 'Different colors represent different types of services: green for health, orange for food banks, blue for community centres, and so on.',
-  },
-  {
-    q: 'How do I switch between videos and the runner game?',
-    a: 'Open Entertainment and use the top buttons to switch between "Short Videos" and "Runner Game" at any time.',
   },
   {
     q: 'Is my information private?',
@@ -68,7 +86,6 @@ const faqs = [
 ];
 
 const hiddenTutorialTitles = new Set([
-  'Managing Your Emergency Contacts',
   'Setting Up Medication Reminders',
   'Staying Active with Exercise Resources',
 ]);
@@ -77,9 +94,7 @@ export default function HelpPage() {
   const [openGuide, setOpenGuide] = useState<string | null>(null);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [tutorials, setTutorials] = useState<Tutorial[]>([]);
-  const visibleTutorials = tutorials.filter(
-    tutorial => tutorial.feature_name !== 'contacts' && !hiddenTutorialTitles.has(tutorial.title),
-  );
+  const visibleTutorials = tutorials.filter(tutorial => !hiddenTutorialTitles.has(tutorial.title));
 
   useEffect(() => {
     supabase.from('tutorials').select('*').order('sort_order').then(({ data }) => {

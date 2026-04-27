@@ -1,16 +1,14 @@
 import { Outlet, NavLink } from 'react-router-dom';
-import { Clapperboard, Home, Map, HelpCircle, Settings, BarChart3 } from 'lucide-react';
+import { Home, Phone, Map, HelpCircle, Settings } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useAccessibility } from '../contexts/AccessibilityContext';
 import Modal from '../components/ui/Modal';
-import AIAssistantFloatingButton from '../components/AIAssistantFloatingButton';
 
 const navItems = [
   { to: '/senior', icon: Home, label: 'Home', end: true },
-  { to: '/senior/entertainment', icon: Clapperboard, label: 'Entertainment', end: false },
+  { to: '/senior/contacts', icon: Phone, label: 'Contacts', end: false },
   { to: '/senior/map', icon: Map, label: 'Map', end: false },
-  { to: '/senior/population', icon: BarChart3, label: 'Population', end: false },
   { to: '/senior/help', icon: HelpCircle, label: 'Help', end: false },
 ];
 
@@ -130,8 +128,6 @@ export default function SeniorLayout() {
 
         </div>
       </Modal>
-
-      <AIAssistantFloatingButton />
     </div>
   );
 }
