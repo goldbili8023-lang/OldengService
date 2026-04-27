@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { AccessibilityProvider } from './contexts/AccessibilityContext';
+import PasswordGate from './components/PasswordGate';
 import SeniorLayout from './layouts/SeniorLayout';
 import WorkerLayout from './layouts/WorkerLayout';
 import DashboardPage from './pages/senior/DashboardPage';
@@ -54,12 +55,14 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <AccessibilityProvider>
-          <AppRoutes />
-        </AccessibilityProvider>
-      </AuthProvider>
-    </BrowserRouter>
+    <PasswordGate>
+      <BrowserRouter basename={import.meta.env.BASE_URL}>
+        <AuthProvider>
+          <AccessibilityProvider>
+            <AppRoutes />
+          </AccessibilityProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </PasswordGate>
   );
 }
