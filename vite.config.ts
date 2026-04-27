@@ -27,9 +27,32 @@ interface GeminiResponsePayload {
       parts?: GeminiResponsePart[];
     };
   }>;
+  error?: {
+    code?: number;
+    message?: string;
+    status?: string;
+  };
 }
 
 const DEFAULT_GEMINI_MODEL = 'gemini-3-flash-preview';
+
+function getGeminiErrorMessage(statusCode: number, payload: GeminiResponsePayload): string {
+  const errorStatus = payload.error?.status ?? '';
+
+  if (statusCode === 429 || errorStatus === 'RESOURCE_EXHAUSTED') {
+    return 'AI usage limit has been reached for now. Please try again later.';
+  }
+
+  if (statusCode === 401 || statusCode === 403 || errorStatus === 'PERMISSION_DENIED') {
+    return 'AI help is not authorized. Please check the Gemini API key.';
+  }
+
+  if (statusCode === 400 || statusCode === 404 || errorStatus === 'INVALID_ARGUMENT' || errorStatus === 'NOT_FOUND') {
+    return 'The selected AI model is not available. Please check the Gemini model setting.';
+  }
+
+  return 'AI help is unavailable right now. Please try again in a moment.';
+}
 
 function getPageContext(pagePath: string): string {
   if (pagePath.startsWith('/senior/map')) {
@@ -193,9 +216,7 @@ function createAiAssistantDevProxy(env: Record<string, string>): Plugin {
 
           if (!geminiResponse.ok) {
             console.error('Gemini API error', geminiResponse.status, geminiPayload);
-            sendJson(res, 502, {
-              error: `Gemini request failed (${geminiResponse.status}). Check GEMINI_API_KEY and GEMINI_MODEL.`,
-            });
+            sendJson(res, 502, { error: getGeminiErrorMessage(geminiResponse.status, geminiPayload) });
             return;
           }
 
