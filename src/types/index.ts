@@ -57,6 +57,17 @@ export interface ServiceLocation {
   updated_at: string;
 }
 
+export type HeatRiskLevel = 'normal' | 'warm' | 'hot';
+
+export interface HeatAdvisory {
+  level: HeatRiskLevel;
+  temperatureC: number;
+  headline: string;
+  body: string;
+  showIndoorSuggestions: boolean;
+  ctaLabel: string | null;
+}
+
 export interface ServiceTag {
   id: string;
   tag_name: string;
@@ -66,6 +77,13 @@ export interface LocationTag {
   id: string;
   location_id: string;
   tag_id: string;
+}
+
+export interface HeatSafePlaceRecommendation {
+  location: ServiceLocation;
+  distanceKm: number | null;
+  score: number;
+  comfortTags: string[];
 }
 
 export interface Tutorial {

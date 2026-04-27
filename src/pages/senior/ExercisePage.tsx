@@ -13,6 +13,42 @@ const categoryLabels: Record<string, string> = {
   general: 'General',
 };
 
+const videoUrlOverrides: Record<string, string> = {
+  'Seated Arm and Shoulder Workout': 'https://www.youtube.com/watch?v=I7LofxyxwEc',
+  'Indoor Walking Workout': 'https://www.youtube.com/watch?v=bO6NNfX_1ns',
+  'Full Body Stretching for Seniors': 'https://www.youtube.com/watch?v=zVCqkiqsz4I',
+  'Morning Stretch Wake-Up': 'https://www.youtube.com/watch?v=zfly__3obJg',
+  'Balance Exercises to Prevent Falls': 'https://www.youtube.com/watch?v=BNC4bi3Ucac',
+  '10-Minute Gentle Exercise Routine': 'https://www.youtube.com/watch?v=oumzMyqK-2I',
+};
+
+function getExerciseVideoUrl(exercise: ExerciseResource): string {
+  return videoUrlOverrides[exercise.title] ?? exercise.video_url;
+}
+
+function getYouTubeVideoId(videoUrl: string): string {
+  try {
+    const url = new URL(videoUrl);
+
+    if (url.hostname.includes('youtu.be')) {
+      return url.pathname.replace('/', '');
+    }
+
+    if (url.hostname.includes('youtube.com')) {
+      return url.searchParams.get('v') ?? '';
+    }
+  } catch {
+    return '';
+  }
+
+  return '';
+}
+
+function getExerciseThumbnailUrl(videoUrl: string): string {
+  const videoId = getYouTubeVideoId(videoUrl);
+  return videoId ? `/exercise-thumbnails/${videoId}.jpg` : '';
+}
+
 export default function ExercisePage() {
   const [exercises, setExercises] = useState<ExerciseResource[]>([]);
   const [selected, setSelected] = useState('');
@@ -85,45 +121,62 @@ export default function ExercisePage() {
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map(ex => (
-            <Card key={ex.id} hover>
-              <div className="aspect-video bg-gray-100 rounded-xl mb-4 flex items-center justify-center relative overflow-hidden">
-                {ex.video_url ? (
-                  <a
-                    href={ex.video_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="absolute inset-0 flex items-center justify-center bg-gray-900/10 hover:bg-gray-900/20 transition-colors"
-                  >
-                    <div className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
-                      <Play className="w-6 h-6 text-teal-600 ml-1" />
-                    </div>
-                  </a>
-                ) : (
-                  <Dumbbell className="w-12 h-12 text-gray-300" />
-                )}
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium px-2 py-1 rounded-full bg-teal-50 text-teal-700">
-                    {categoryLabels[ex.category] || ex.category}
-                  </span>
-                  {ex.duration && (
-                    <span className="flex items-center gap-1 text-xs text-gray-500">
-                      <Clock className="w-3 h-3" /> {ex.duration}
-                    </span>
+          {filtered.map(ex => {
+            const videoUrl = getExerciseVideoUrl(ex);
+            const thumbnailUrl = getExerciseThumbnailUrl(videoUrl);
+
+            return (
+              <Card key={ex.id} hover>
+                <div className="aspect-video bg-gray-100 rounded-xl mb-4 flex items-center justify-center relative overflow-hidden">
+                  {thumbnailUrl ? (
+                    <img
+                      src={thumbnailUrl}
+                      alt=""
+                      loading="lazy"
+                      className="absolute inset-0 h-full w-full object-cover"
+                      onError={event => {
+                        event.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  ) : null}
+                  {videoUrl ? (
+                    <a
+                      href={videoUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Open ${ex.title} on YouTube`}
+                      className="absolute inset-0 flex items-center justify-center bg-gray-900/20 transition-colors hover:bg-gray-900/30"
+                    >
+                      <div className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
+                        <Play className="w-6 h-6 text-teal-600 ml-1" />
+                      </div>
+                    </a>
+                  ) : (
+                    <Dumbbell className="w-12 h-12 text-gray-300" />
                   )}
                 </div>
-                <h3 className="font-semibold text-gray-900">{ex.title}</h3>
-                <p className="text-sm text-gray-500">{ex.description}</p>
-                {ex.safety_note && (
-                  <p className="text-xs text-amber-700 bg-amber-50 rounded-lg p-2 mt-2">
-                    {ex.safety_note}
-                  </p>
-                )}
-              </div>
-            </Card>
-          ))}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium px-2 py-1 rounded-full bg-teal-50 text-teal-700">
+                      {categoryLabels[ex.category] || ex.category}
+                    </span>
+                    {ex.duration && (
+                      <span className="flex items-center gap-1 text-xs text-gray-500">
+                        <Clock className="w-3 h-3" /> {ex.duration}
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="font-semibold text-gray-900">{ex.title}</h3>
+                  <p className="text-sm text-gray-500">{ex.description}</p>
+                  {ex.safety_note && (
+                    <p className="text-xs text-amber-700 bg-amber-50 rounded-lg p-2 mt-2">
+                      {ex.safety_note}
+                    </p>
+                  )}
+                </div>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>
