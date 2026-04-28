@@ -60,7 +60,7 @@ export default function IntroductionPage() {
                 Connecting older adults with safer, simpler community support.
               </h1>
               <p className="mt-5 max-w-2xl text-base leading-7 text-slate-100 sm:text-lg">
-                SafeConnect helps older adults and support workers find nearby services, plan visits, respond to weather
+                SafeConnect helps older adults find nearby services, plan visits, respond to weather
                 risks, and access practical wellbeing resources in one calm digital experience.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
