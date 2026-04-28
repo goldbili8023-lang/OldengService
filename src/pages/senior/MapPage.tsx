@@ -64,7 +64,7 @@ const categories = [
   { value: OUTDOOR_CATEGORY_VALUE, label: 'Outdoor Spaces' },
   { value: 'library', label: 'Libraries' },
   { value: 'transport', label: 'Transport' },
-  { value: 'housing', label: 'Age Support & House service' },
+  { value: 'housing', label: 'Aged Care & Housing' },
   { value: 'counseling', label: 'Counselling' },
 ];
 
