@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Clapperboard, Phone, Map, Dumbbell, HelpCircle,
+  Clapperboard, Phone, Map, HelpCircle,
   Sun, Moon, CloudRain, CloudSnow, Cloud, AlertTriangle, BarChart3
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -205,7 +205,6 @@ export default function DashboardPage() {
         {[
           { to: '/senior/entertainment', icon: Clapperboard, label: 'Entertainment', color: 'bg-rose-100 text-rose-700' },
           { to: '/senior/map', icon: Map, label: 'Nearby Services', color: 'bg-sky-100 text-sky-700' },
-          { to: '/senior/exercise', icon: Dumbbell, label: 'Exercise', color: 'bg-amber-100 text-amber-700' },
           { to: '/senior/population', icon: BarChart3, label: 'Population', color: 'bg-indigo-100 text-indigo-700' },
           { to: '/senior/help', icon: HelpCircle, label: 'How to Use', color: 'bg-teal-100 text-teal-700' },
         ].map(item => (
