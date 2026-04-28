@@ -32,11 +32,16 @@ function createServiceIcon(category: string, selected = false, compact = false) 
   });
 }
 
+function formatClusterCount(count: number): string {
+  if (count >= 1000) return `${(count / 1000).toFixed(count >= 10000 ? 0 : 1)}k`;
+  return String(count);
+}
+
 function createClusterIcon(count: number) {
-  const size = count >= 50 ? 48 : count >= 20 ? 42 : 36;
+  const size = count >= 1000 ? 56 : count >= 100 ? 52 : count >= 50 ? 48 : count >= 20 ? 42 : 36;
 
   return L.divIcon({
-    html: `<span class="service-cluster-bubble" style="--cluster-size:${size}px;">${count}</span>`,
+    html: `<span class="service-cluster-bubble" style="--cluster-size:${size}px;">${formatClusterCount(count)}</span>`,
     className: 'service-cluster',
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
@@ -108,12 +113,19 @@ type ClusterItem =
   | { type: 'location'; location: ServiceLocation }
   | { type: 'cluster'; id: string; position: [number, number]; count: number; bounds: L.LatLngBounds };
 
+function shouldShowIndividualMarkers(count: number, zoom: number): boolean {
+  if (count <= 35) return true;
+  if (count <= 250) return zoom >= 13;
+  if (count <= 1000) return zoom >= 14;
+  return zoom >= 16;
+}
+
 function clusterLocations(locations: ServiceLocation[], map: L.Map, zoom: number): ClusterItem[] {
-  if (zoom >= 13 || locations.length <= 35) {
+  if (shouldShowIndividualMarkers(locations.length, zoom)) {
     return locations.map(location => ({ type: 'location', location }));
   }
 
-  const gridSize = zoom <= 9 ? 72 : zoom <= 11 ? 60 : 48;
+  const gridSize = zoom <= 8 ? 88 : zoom <= 10 ? 72 : zoom <= 12 ? 60 : zoom <= 14 ? 48 : 36;
   const buckets = new Map<string, ServiceLocation[]>();
 
   for (const location of locations) {
@@ -195,7 +207,7 @@ function LocationMarkers({
               position={item.position}
               icon={createClusterIcon(item.count)}
               eventHandlers={{
-                click: () => map.flyToBounds(item.bounds, { padding: [56, 56], maxZoom: 14 }),
+                click: () => map.flyToBounds(item.bounds, { padding: [56, 56], maxZoom: 16 }),
               }}
             />
           );

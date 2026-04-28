@@ -69,6 +69,16 @@ const categories = [
 ];
 
 const categoryLabelByValue = new Map(categories.map(category => [category.value, category.label]));
+const overviewCategoryLabelByValue = new Map([
+  ['health', 'Health services'],
+  ['food_bank', 'Food Banks'],
+  ['community_center', 'Community Centres'],
+  ['library', 'Libraries'],
+  ['housing', 'Aged Care & Housing services'],
+  ['counseling', 'Counselling services'],
+  [HEAT_SAFE_INDOOR_CATEGORY_VALUE, 'Cool Indoor places'],
+  [OUTDOOR_CATEGORY_VALUE, 'Outdoor Spaces'],
+]);
 const categoryAccentColors: Record<string, string> = {
   '': categoryColors.default,
 };
@@ -77,8 +87,9 @@ const NEARBY_RADIUS_KM = 10;
 const EXPANDED_RADIUS_KM = 25;
 const MIN_NEARBY_RESULTS = 12;
 const MAX_VISIBLE_NEARBY = 80;
+const SERVICE_LOCATION_PAGE_SIZE = 1000;
 
-type VisibleMode = 'prompt' | 'nearby' | 'postcode' | 'suburb' | 'text';
+type VisibleMode = 'overview' | 'nearby' | 'postcode' | 'suburb' | 'text';
 
 interface SearchAnchor {
   label: string;
@@ -141,6 +152,36 @@ function formatPostcodeLabel(entry: VicPostcodeEntry): string {
   return `VIC ${entry.postcode} - ${entry.label}`;
 }
 
+function formatCount(count: number): string {
+  return new Intl.NumberFormat('en-AU').format(count);
+}
+
+async function fetchAllServiceLocations(): Promise<ServiceLocation[]> {
+  const allLocations: ServiceLocation[] = [];
+
+  for (let from = 0; ; from += SERVICE_LOCATION_PAGE_SIZE) {
+    const to = from + SERVICE_LOCATION_PAGE_SIZE - 1;
+    const { data, error } = await supabase
+      .from('service_locations')
+      .select('*')
+      .order('id', { ascending: true })
+      .range(from, to);
+
+    if (error) {
+      throw error;
+    }
+
+    const page = (data ?? []) as ServiceLocation[];
+    allLocations.push(...page);
+
+    if (page.length < SERVICE_LOCATION_PAGE_SIZE) {
+      break;
+    }
+  }
+
+  return allLocations;
+}
+
 function getTransitModeIcon(mode: TransitMode) {
   if (mode === 'train') return <TrainFront className="h-4 w-4" />;
   if (mode === 'tram') return <TramFront className="h-4 w-4" />;
@@ -153,7 +194,7 @@ export default function MapPage() {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<ServiceLocation | null>(null);
-  const [visibleMode, setVisibleMode] = useState<VisibleMode>('prompt');
+  const [visibleMode, setVisibleMode] = useState<VisibleMode>('overview');
   const [radiusKm, setRadiusKm] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -161,7 +202,7 @@ export default function MapPage() {
   const [searchAnchor, setSearchAnchor] = useState<SearchAnchor | null>(null);
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [searchNotice, setSearchNotice] = useState('');
-  const [statusMessage, setStatusMessage] = useState('Use your location or search to show nearby services.');
+  const [statusMessage, setStatusMessage] = useState('Loading services...');
   const [transportPanelOpen, setTransportPanelOpen] = useState(false);
   const [transportLoading, setTransportLoading] = useState(false);
   const [walkingRoute, setWalkingRoute] = useState<WalkingRouteResult | null>(null);
@@ -252,23 +293,37 @@ export default function MapPage() {
       return;
     }
 
-    if (userLocation) {
-      setVisibleMode('nearby');
-      setRadiusKm(NEARBY_RADIUS_KM);
-    } else {
-      setVisibleMode('prompt');
-      setRadiusKm(null);
-    }
+    setVisibleMode('overview');
+    setRadiusKm(null);
   };
 
   useEffect(() => {
-    supabase
-      .from('service_locations')
-      .select('*')
-      .then(({ data }) => {
-        setLocations(data || []);
+    let cancelled = false;
+
+    setLoading(true);
+
+    fetchAllServiceLocations()
+      .then(data => {
+        if (cancelled) return;
+
+        setLocations(data);
+      })
+      .catch(error => {
+        if (cancelled) return;
+
+        console.error('Failed to load service locations', error);
+        setLocations([]);
+        setStatusMessage('Map services could not be loaded. Please try again later.');
+      })
+      .finally(() => {
+        if (cancelled) return;
+
         setLoading(false);
       });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -285,8 +340,11 @@ export default function MapPage() {
           if (cancelled) return;
 
           setUserLocation([position.coords.latitude, position.coords.longitude]);
-          setVisibleMode('nearby');
-          setRadiusKm(NEARBY_RADIUS_KM);
+
+          if (heatSafePresetActive) {
+            setVisibleMode('nearby');
+            setRadiusKm(NEARBY_RADIUS_KM);
+          }
         });
       })
       .catch(() => {});
@@ -294,7 +352,7 @@ export default function MapPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [heatSafePresetActive]);
 
   useEffect(() => {
     if (!heatSafePresetActive) return;
@@ -382,10 +440,10 @@ export default function MapPage() {
   const heatSafeCategoryActive = selectedCategory === HEAT_SAFE_INDOOR_CATEGORY_VALUE;
 
   const displayResult = useMemo<DisplayResult>(() => {
-    if (visibleMode === 'prompt') {
+    if (visibleMode === 'overview') {
       return {
-        visibleLocations: [],
-        totalBeforeCap: 0,
+        visibleLocations: categoryFilteredLocations,
+        totalBeforeCap: categoryFilteredLocations.length,
         radiusKm: null,
         capped: false,
         expanded: false,
@@ -550,6 +608,9 @@ export default function MapPage() {
   useEffect(() => {
     const pluralLabel = heatSafeCategoryActive ? 'indoor places' : 'services';
     const singularLabel = heatSafeCategoryActive ? 'indoor place' : 'service';
+    const overviewCategoryLabel = overviewCategoryLabelByValue.get(selectedCategory)
+      ?? categoryLabelByValue.get(selectedCategory)
+      ?? 'services';
 
     if (loading) {
       setStatusMessage('Loading services...');
@@ -561,12 +622,15 @@ export default function MapPage() {
       return;
     }
 
-    if (visibleMode === 'prompt') {
-      setStatusMessage(
-        heatSafeCategoryActive
-          ? 'Use your location or search to show cooler indoor places.'
-          : 'Use your location or search to show nearby services.',
-      );
+    if (visibleMode === 'overview') {
+      if (selectedCategory) {
+        setStatusMessage(
+          `Showing all ${formatCount(displayResult.visibleLocations.length)} ${overviewCategoryLabel} across Victoria. Zoom in to see individual places.`,
+        );
+        return;
+      }
+
+      setStatusMessage(`Showing all ${formatCount(displayResult.visibleLocations.length)} services across Victoria. Zoom in to see individual places.`);
       return;
     }
 
@@ -661,6 +725,7 @@ export default function MapPage() {
     loading,
     searchAnchor,
     searchNotice,
+    selectedCategory,
     userLocation,
     visibleMode,
   ]);
@@ -722,10 +787,8 @@ export default function MapPage() {
     ? userLocation
     : visibleMode === 'suburb' || visibleMode === 'postcode'
       ? searchAnchor?.center ?? null
-      : visibleMode === 'prompt'
-        ? DEFAULT_MAP_CENTER
-        : null;
-  const mapZoom = visibleMode === 'prompt' ? 10 : visibleMode === 'suburb' || visibleMode === 'postcode' ? 12 : 13;
+      : null;
+  const mapZoom = visibleMode === 'overview' ? 8 : visibleMode === 'suburb' || visibleMode === 'postcode' ? 12 : 13;
   const selectedDistance = selectedLocation ? formatDistance(userLocation, selectedLocation) : null;
   const nearbyTransitStops = useMemo<TransitStopOption[]>(() => {
     const stops = new Map<string, TransitStopOption>();
@@ -934,34 +997,6 @@ export default function MapPage() {
             nearbyTransitStops={transportPanelOpen ? nearbyTransitStops : []}
           />
 
-          {visibleMode === 'prompt' && (
-            <div className="absolute inset-0 z-[400] flex items-center justify-center bg-white/40 p-4">
-              <div className="max-w-md rounded-lg border border-white/80 bg-white/95 p-5 text-center shadow-sm">
-                <h2 className="text-lg font-semibold text-gray-900">
-                  {heatSafeCategoryActive ? 'Start with cooler indoor places' : 'Start with nearby services'}
-                </h2>
-                <p className="mt-2 text-sm text-gray-600">
-                  {heatSafeCategoryActive
-                    ? 'Use your location or search for a postcode, suburb, service, or address before indoor place suggestions appear on the map.'
-                    : 'Use your location or search for a postcode, suburb, service, or address before points appear on the map.'}
-                </p>
-                <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-center">
-                  <Button type="button" size="md" onClick={handleNearMe}>
-                    <Navigation className="w-4 h-4 mr-2" /> Use my location
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="md"
-                    onClick={() => searchInputRef.current?.focus()}
-                  >
-                    Search instead
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-
           {selectedLocation && (
             <div className="absolute bottom-3 left-3 right-3 z-[500] max-h-[78vh] overflow-y-auto rounded-lg border border-gray-200 bg-white p-4 shadow-lg md:left-auto md:w-[390px]">
               <div className="flex items-start justify-between gap-3">
@@ -1114,9 +1149,9 @@ export default function MapPage() {
 
       <div className="flex items-center gap-2 text-sm text-gray-500">
         <MapPin className="w-4 h-4" />
-        {displayResult.visibleLocations.length} {heatSafeCategoryActive
+        {formatCount(displayResult.visibleLocations.length)} {heatSafeCategoryActive
           ? displayResult.visibleLocations.length === 1 ? 'indoor place' : 'indoor places'
-          : displayResult.visibleLocations.length === 1 ? 'service' : 'services'} shown
+          : displayResult.visibleLocations.length === 1 ? 'service' : 'services'} {visibleMode === 'overview' ? 'represented' : 'shown'}
       </div>
     </div>
   );
