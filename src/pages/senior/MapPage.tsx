@@ -60,18 +60,17 @@ const categories = [
   { value: 'health', label: 'Health' },
   { value: 'food_bank', label: 'Food Banks' },
   { value: 'community_center', label: 'Community Centres' },
-  { value: HEAT_SAFE_INDOOR_CATEGORY_VALUE, label: 'Cool Indoor' },
-  { value: OUTDOOR_CATEGORY_VALUE, label: 'Outdoor Spaces' },
   { value: 'library', label: 'Libraries' },
   { value: 'transport', label: 'Transport' },
   { value: 'housing', label: 'Aged Care & Housing' },
   { value: 'counseling', label: 'Counselling' },
+  { value: HEAT_SAFE_INDOOR_CATEGORY_VALUE, label: 'Cool Indoor' },
+  { value: OUTDOOR_CATEGORY_VALUE, label: 'Outdoor Spaces' },
 ];
 
 const categoryLabelByValue = new Map(categories.map(category => [category.value, category.label]));
 const categoryAccentColors: Record<string, string> = {
   '': categoryColors.default,
-  [HEAT_SAFE_INDOOR_CATEGORY_VALUE]: '#0891b2',
 };
 const DEFAULT_MAP_CENTER: [number, number] = [-37.8136, 144.9631];
 const NEARBY_RADIUS_KM = 10;
@@ -107,6 +106,10 @@ function getStatusBadgeVariant(status: ServiceLocation['current_status']) {
 
 function getCategoryAccentColor(categoryValue: string): string {
   return categoryAccentColors[categoryValue] ?? categoryColors[categoryValue] ?? categoryColors.default;
+}
+
+function shouldShowCategoryAccent(categoryValue: string): boolean {
+  return categoryValue !== HEAT_SAFE_INDOOR_CATEGORY_VALUE && categoryValue !== OUTDOOR_CATEGORY_VALUE;
 }
 
 function formatDistance(origin: [number, number] | null, location: ServiceLocation): string | null {
@@ -895,11 +898,13 @@ export default function MapPage() {
                 : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
             }`}
           >
-            <span
-              aria-hidden="true"
-              className={`h-2.5 w-2.5 flex-shrink-0 rounded-full ${selectedCategory === cat.value ? 'ring-2 ring-white/70' : ''}`}
-              style={{ backgroundColor: getCategoryAccentColor(cat.value) }}
-            />
+            {shouldShowCategoryAccent(cat.value) && (
+              <span
+                aria-hidden="true"
+                className={`h-2.5 w-2.5 flex-shrink-0 rounded-full ${selectedCategory === cat.value ? 'ring-2 ring-white/70' : ''}`}
+                style={{ backgroundColor: getCategoryAccentColor(cat.value) }}
+              />
+            )}
             <span>{cat.label}</span>
             <span className={`text-xs ${selectedCategory === cat.value ? 'text-teal-50' : 'text-gray-400'}`}>
               {categoryCounts[cat.value] || 0}
