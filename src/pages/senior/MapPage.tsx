@@ -16,7 +16,7 @@ import {
   X,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import MapView from '../../components/MapView';
+import MapView, { categoryColors } from '../../components/MapView';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import { VIC_POSTCODES, type VicPostcodeEntry } from '../../data/vicPostcodes';
@@ -69,6 +69,10 @@ const categories = [
 ];
 
 const categoryLabelByValue = new Map(categories.map(category => [category.value, category.label]));
+const categoryAccentColors: Record<string, string> = {
+  '': categoryColors.default,
+  [HEAT_SAFE_INDOOR_CATEGORY_VALUE]: '#0891b2',
+};
 const DEFAULT_MAP_CENTER: [number, number] = [-37.8136, 144.9631];
 const NEARBY_RADIUS_KM = 10;
 const EXPANDED_RADIUS_KM = 25;
@@ -99,6 +103,10 @@ function getStatusBadgeVariant(status: ServiceLocation['current_status']) {
   if (status === 'open') return 'success';
   if (status === 'closed') return 'danger';
   return 'warning';
+}
+
+function getCategoryAccentColor(categoryValue: string): string {
+  return categoryAccentColors[categoryValue] ?? categoryColors[categoryValue] ?? categoryColors.default;
 }
 
 function formatDistance(origin: [number, number] | null, location: ServiceLocation): string | null {
@@ -881,14 +889,19 @@ export default function MapPage() {
               setSelectedCategory(cat.value);
               setSelectedLocation(null);
             }}
-            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
               selectedCategory === cat.value
                 ? 'bg-teal-600 text-white'
                 : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
             }`}
           >
-            {cat.label}
-            <span className={`ml-2 text-xs ${selectedCategory === cat.value ? 'text-teal-50' : 'text-gray-400'}`}>
+            <span
+              aria-hidden="true"
+              className={`h-2.5 w-2.5 flex-shrink-0 rounded-full ${selectedCategory === cat.value ? 'ring-2 ring-white/70' : ''}`}
+              style={{ backgroundColor: getCategoryAccentColor(cat.value) }}
+            />
+            <span>{cat.label}</span>
+            <span className={`text-xs ${selectedCategory === cat.value ? 'text-teal-50' : 'text-gray-400'}`}>
               {categoryCounts[cat.value] || 0}
             </span>
           </button>

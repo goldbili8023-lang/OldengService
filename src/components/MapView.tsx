@@ -7,7 +7,7 @@ import type { TransitStopOption } from '../lib/transport';
 import type { ServiceLocation } from '../types';
 import Badge from './ui/Badge';
 
-const categoryColors: Record<string, string> = {
+export const categoryColors: Record<string, string> = {
   health: '#059669',
   food_bank: '#d97706',
   community_center: '#0284c7',
