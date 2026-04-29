@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Dumbbell, Play, ShieldCheck, Clock } from 'lucide-react';
+import { Dumbbell, Play, ShieldCheck, Clock, MapPin, Globe } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import Card from '../../components/ui/Card';
 import EmptyState from '../../components/ui/EmptyState';
 import type { ExerciseResource } from '../../types';
+import { sportsClubs, uniqueActivityTypes } from '../../data/sportsClubs';
 
 const categoryLabels: Record<string, string> = {
   chair: 'Chair Exercises',
@@ -49,10 +50,22 @@ function getExerciseThumbnailUrl(videoUrl: string): string {
   return videoId ? `/exercise-thumbnails/${videoId}.jpg` : '';
 }
 
+function getClubActivityTypes(activityType: string) {
+  return activityType
+    .split(',')
+    .map(type => type.trim())
+    .filter(Boolean);
+}
+
 export default function ExercisePage() {
   const [exercises, setExercises] = useState<ExerciseResource[]>([]);
   const [selected, setSelected] = useState('');
   const [loading, setLoading] = useState(true);
+  const [selectedActivityType, setSelectedActivityType] = useState('');
+  const [selectedNeighbourhood, setSelectedNeighbourhood] = useState('');
+  const [clubPage, setClubPage] = useState(1);
+
+  const clubsPerPage = 10;
 
   useEffect(() => {
     supabase
@@ -64,8 +77,25 @@ export default function ExercisePage() {
       });
   }, []);
 
+  useEffect(() => {
+    setClubPage(1);
+  }, [selectedActivityType, selectedNeighbourhood]);
+
   const categories = [...new Set(exercises.map(e => e.category))];
   const filtered = selected ? exercises.filter(e => e.category === selected) : exercises;
+  const neighbourhoods = [...new Set(sportsClubs.map(club => club.neighbourhood).filter(Boolean))].sort((a, b) =>
+    a.localeCompare(b),
+  );
+  const filteredClubs = sportsClubs.filter(club => {
+    const matchesActivityType = selectedActivityType
+      ? getClubActivityTypes(club.activityType).includes(selectedActivityType)
+      : true;
+    const matchesNeighbourhood = selectedNeighbourhood ? club.neighbourhood === selectedNeighbourhood : true;
+
+    return matchesActivityType && matchesNeighbourhood;
+  });
+  const totalClubPages = Math.max(1, Math.ceil(filteredClubs.length / clubsPerPage));
+  const paginatedClubs = filteredClubs.slice((clubPage - 1) * clubsPerPage, clubPage * clubsPerPage);
 
   if (loading) return <div className="py-12 text-center text-gray-500">Loading exercises...</div>;
 
@@ -179,6 +209,152 @@ export default function ExercisePage() {
           })}
         </div>
       )}
+
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-xl font-bold text-gray-900">Melbourne Sports Clubs</h2>
+          <p className="text-gray-500 text-sm mt-1">
+            Local clubs and activities around Melbourne that you can explore.
+          </p>
+        </div>
+
+        <Card>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="activity-type-filter" className="block text-sm font-medium text-gray-700 mb-2">
+                Activity Type
+              </label>
+              <select
+                id="activity-type-filter"
+                value={selectedActivityType}
+                onChange={event => setSelectedActivityType(event.target.value)}
+                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+              >
+                <option value="">All activity types</option>
+                {uniqueActivityTypes.map(activityType => (
+                  <option key={activityType} value={activityType}>
+                    {activityType}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="neighbourhood-filter" className="block text-sm font-medium text-gray-700 mb-2">
+                Neighbourhood
+              </label>
+              <select
+                id="neighbourhood-filter"
+                value={selectedNeighbourhood}
+                onChange={event => setSelectedNeighbourhood(event.target.value)}
+                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+              >
+                <option value="">All neighbourhoods</option>
+                {neighbourhoods.map(neighbourhood => (
+                  <option key={neighbourhood} value={neighbourhood}>
+                    {neighbourhood}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-col gap-2 text-sm text-gray-500 md:flex-row md:items-center md:justify-between">
+            <p>
+              Showing {paginatedClubs.length} of {filteredClubs.length} clubs
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedActivityType('');
+                setSelectedNeighbourhood('');
+              }}
+              className="text-teal-700 font-medium hover:text-teal-800 hover:underline self-start md:self-auto"
+            >
+              Clear filters
+            </button>
+          </div>
+        </Card>
+
+        <Card className="p-0 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-50">
+                <tr className="text-left text-gray-600">
+                  <th className="px-4 py-3 font-semibold">Title</th>
+                  <th className="px-4 py-3 font-semibold">Activity Type</th>
+                  <th className="px-4 py-3 font-semibold">Neighbourhood</th>
+                  <th className="px-4 py-3 font-semibold">Location</th>
+                  <th className="px-4 py-3 font-semibold">Website</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {paginatedClubs.map(club => (
+                  <tr key={`${club.title}-${club.location}`} className="align-top">
+                    <td className="px-4 py-3 font-medium text-gray-900">{club.title}</td>
+                    <td className="px-4 py-3 text-gray-600">{club.activityType || 'N/A'}</td>
+                    <td className="px-4 py-3 text-gray-600">{club.neighbourhood || 'N/A'}</td>
+                    <td className="px-4 py-3 text-gray-600">
+                      <div className="flex items-start gap-2 min-w-[220px]">
+                        <MapPin className="w-4 h-4 text-teal-600 mt-0.5 flex-shrink-0" />
+                        <span>{club.location || 'N/A'}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">
+                      {club.website ? (
+                        <a
+                          href={club.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 text-teal-700 hover:text-teal-800 hover:underline"
+                        >
+                          <Globe className="w-4 h-4" />
+                          Visit website
+                        </a>
+                      ) : (
+                        'N/A'
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {paginatedClubs.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
+                      No clubs match the selected filters.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+
+        {filteredClubs.length > 0 && (
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-gray-500">
+              Page {clubPage} of {totalClubPages}
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setClubPage(page => Math.max(1, page - 1))}
+                disabled={clubPage === 1}
+                className="px-4 py-2 rounded-full text-sm font-medium border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Previous
+              </button>
+              <button
+                type="button"
+                onClick={() => setClubPage(page => Math.min(totalClubPages, page + 1))}
+                disabled={clubPage === totalClubPages}
+                className="px-4 py-2 rounded-full text-sm font-medium border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -105,6 +105,14 @@ export interface ExerciseResource {
   duration: string;
 }
 
+export interface SportsClub {
+  title: string;
+  activityType: string;
+  neighbourhood: string;
+  location: string;
+  website: string;
+}
+
 export interface AreaStatistic {
   id: string;
   area_name: string;
