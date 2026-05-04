@@ -101,7 +101,7 @@ export default function DashboardPage() {
           </Card>
         )}
 
-        <Card>
+        {/* <Card>
           <h3 className="font-semibold text-gray-900 mb-4">Quick Call</h3>
           {primaryContact ? (
             <div className="space-y-3">
@@ -122,7 +122,7 @@ export default function DashboardPage() {
               <p className="text-sm text-gray-500">No primary contact available right now.</p>
             </div>
           )}
-        </Card>
+        </Card> */}
 
         {weather && (
           <Card className={weatherCardTone}>
