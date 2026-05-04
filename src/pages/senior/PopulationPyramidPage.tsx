@@ -148,7 +148,7 @@ export default function PopulationPyramidPage() {
               <div className="grid grid-cols-[1fr_56px_1fr] gap-2 text-sm font-semibold text-gray-700">
                 <div className="text-right text-sky-800">Male</div>
                 <div className="text-center">Age</div>
-                <div className="text-left text-rose-800">Female</div>
+                <div className="text-left text-sky-800">Female</div>
               </div>
 
               <div className="mt-3 grid grid-cols-[1fr_56px_1fr] gap-2">
@@ -204,7 +204,7 @@ export default function PopulationPyramidPage() {
                     {displayRows.map(row => (
                       <div key={`female-${row.age}`} className="relative z-10 flex h-1 items-center">
                         <div
-                          className="h-full rounded-r-sm bg-rose-800"
+                          className="h-full rounded-r-sm bg-sky-800"
                           style={{ width: `${(row.female / populationPyramidSideMax) * 100}%` }}
                           title={`Female age ${row.age}: ${formatTotalPopulation(row.female)}`}
                         />
@@ -241,17 +241,6 @@ export default function PopulationPyramidPage() {
                       </span>
                     ))}
                   </div>
-                </div>
-              </div>
-
-              <div className="mt-4 flex items-center justify-center gap-6 text-sm font-semibold text-gray-700">
-                <div className="flex items-center gap-2">
-                  <span className="h-4 w-4 rounded-full bg-sky-800" />
-                  Male
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="h-4 w-4 rounded-full bg-rose-800" />
-                  Female
                 </div>
               </div>
             </div>
