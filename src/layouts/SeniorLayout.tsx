@@ -1,7 +1,6 @@
 import { Outlet, NavLink } from 'react-router-dom';
 import { Clapperboard, Dumbbell, Home, Map, HelpCircle, Settings, BarChart3 } from 'lucide-react';
 import { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
 import { useAccessibility } from '../contexts/AccessibilityContext';
 import Modal from '../components/ui/Modal';
 import AIAssistantFloatingButton from '../components/AIAssistantFloatingButton';
@@ -16,7 +15,6 @@ const navItems = [
 ];
 
 export default function SeniorLayout() {
-  const { profile } = useAuth();
   const { fontSize, highContrast, setFontSize, setHighContrast } = useAccessibility();
   const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -46,7 +44,6 @@ export default function SeniorLayout() {
           </nav>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-sm text-gray-500">Hi, {profile?.name || 'User'}</span>
           <button
             onClick={() => setSettingsOpen(true)}
             className="p-2 rounded-xl hover:bg-gray-100 text-gray-500 transition-colors"
