@@ -70,12 +70,12 @@ export default function IntroductionPage() {
                 >
                   Enter SafeConnect <ArrowRight className="h-5 w-5" />
                 </Link>
-                <a
+                {/* <a
                   href="/iteration1/"
                   className="inline-flex items-center justify-center rounded-xl border border-white/40 bg-white/12 px-5 py-3 text-base font-semibold text-white backdrop-blur-sm transition hover:bg-white/20"
                 >
                   View Iteration 1
-                </a>
+                </a> */}
               </div>
             </div>
           </div>
