@@ -22,9 +22,9 @@ function formatPercentage(value: number) {
 }
 
 function getAxisTickClass(index: number, length: number) {
-  if (index === 0) return 'translate-x-0';
-  if (index === length - 1) return '-translate-x-full';
-  return '-translate-x-1/2';
+  if (index === 0) return 'w-12 translate-x-0 text-left';
+  if (index === length - 1) return 'w-12 -translate-x-full text-right';
+  return 'w-12 -translate-x-1/2 text-center';
 }
 
 export default function PopulationPyramidPage() {
@@ -152,16 +152,19 @@ export default function PopulationPyramidPage() {
               </div>
 
               <div className="mt-3 grid grid-cols-[1fr_56px_1fr] gap-2">
-                <div
-                  className="rounded-2xl border border-slate-100 bg-slate-50/70 px-2.5 py-2.5"
-                  style={{
-                    backgroundImage: 'linear-gradient(to right, rgba(148,163,184,0.18) 1px, transparent 1px)',
-                    backgroundSize: '25% 100%',
-                  }}
-                >
-                  <div className="space-y-px">
+                <div className="rounded-2xl border border-slate-100 bg-slate-50/70 px-2.5 py-2.5">
+                  <div className="relative space-y-px">
+                    <div className="pointer-events-none absolute inset-0">
+                      {populationPyramidTicks.map(tick => (
+                        <span
+                          key={`male-grid-${tick}`}
+                          className="absolute top-0 h-full w-px bg-slate-300/60"
+                          style={{ left: `${100 - (tick / populationPyramidSideMax) * 100}%` }}
+                        />
+                      ))}
+                    </div>
                     {displayRows.map(row => (
-                      <div key={`male-${row.age}`} className="flex h-1 items-center justify-end">
+                      <div key={`male-${row.age}`} className="relative z-10 flex h-1 items-center justify-end">
                         <div
                           className="h-full rounded-l-sm bg-sky-800"
                           style={{ width: `${(row.male / populationPyramidSideMax) * 100}%` }}
@@ -187,16 +190,19 @@ export default function PopulationPyramidPage() {
                   </div>
                 </div>
 
-                <div
-                  className="rounded-2xl border border-slate-100 bg-slate-50/70 px-2.5 py-2.5"
-                  style={{
-                    backgroundImage: 'linear-gradient(to right, rgba(148,163,184,0.18) 1px, transparent 1px)',
-                    backgroundSize: '25% 100%',
-                  }}
-                >
-                  <div className="space-y-px">
+                <div className="rounded-2xl border border-slate-100 bg-slate-50/70 px-2.5 py-2.5">
+                  <div className="relative space-y-px">
+                    <div className="pointer-events-none absolute inset-0">
+                      {populationPyramidTicks.map(tick => (
+                        <span
+                          key={`female-grid-${tick}`}
+                          className="absolute top-0 h-full w-px bg-slate-300/60"
+                          style={{ left: `${(tick / populationPyramidSideMax) * 100}%` }}
+                        />
+                      ))}
+                    </div>
                     {displayRows.map(row => (
-                      <div key={`female-${row.age}`} className="flex h-1 items-center">
+                      <div key={`female-${row.age}`} className="relative z-10 flex h-1 items-center">
                         <div
                           className="h-full rounded-r-sm bg-rose-800"
                           style={{ width: `${(row.female / populationPyramidSideMax) * 100}%` }}
