@@ -272,6 +272,57 @@ export default function PopulationPyramidPage() {
           </div>
         </div>
       </Card>
+
+      <Card>
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Social Connection Among Older Australians</h2>
+            <p className="mt-1 text-sm text-gray-500">
+              In 2022, among 4.2 million Australians aged 65 years and over living in households.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+              <p className="text-2xl font-bold text-sky-800">75.7%</p>
+              <p className="mt-1 text-sm text-gray-700">
+                Saw family or friends outside their home at least once per week in the previous 3 months.
+              </p>
+            </div>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+              <p className="text-2xl font-bold text-sky-800">96.8%</p>
+              <p className="mt-1 text-sm text-gray-700">
+                Had non-visit contact with family or friends outside their household.
+              </p>
+            </div>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+              <p className="text-2xl font-bold text-sky-800">91.7%</p>
+              <p className="mt-1 text-sm text-gray-700">
+                Reported support was available in a time of crisis from someone outside their household.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <div>
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Contact Patterns</h3>
+              <ul className="mt-3 space-y-2 text-sm text-gray-700">
+                <li>36.4% wanted more contact with family or friends living outside their household.</li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Participation And Barriers</h3>
+              <ul className="mt-3 space-y-2 text-sm text-gray-700">
+                <li>77.7% were satisfied with social and community participation all or most of the time.</li>
+                <li>85.3% said they leave their home as often as they would like.</li>
+                <li>44.0% reported barriers to social and community activities in the previous 3 months.</li>
+                <li>Common barriers: COVID-19 related reasons (53.1%), own condition or old age (34.6%), cost (25.2%), and being too busy or having no time (14.2%).</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </Card>
     </div>
   );
 }
