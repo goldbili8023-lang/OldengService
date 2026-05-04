@@ -54,6 +54,10 @@ export default function PopulationPyramidPage() {
     () => (selectedSeries ? [...selectedSeries.rows].sort((a, b) => b.age - a.age) : []),
     [selectedSeries],
   );
+  const visiblePopulationTicks = useMemo(
+    () => populationPyramidTicks.slice(0, -1),
+    [],
+  );
 
   if (!selectedSeries) {
     return (
@@ -155,7 +159,7 @@ export default function PopulationPyramidPage() {
                 <div className="rounded-2xl border border-slate-100 bg-slate-50/70 px-2.5 py-2.5">
                   <div className="relative space-y-px">
                     <div className="pointer-events-none absolute inset-0">
-                      {populationPyramidTicks.map(tick => (
+                      {visiblePopulationTicks.map(tick => (
                         <span
                           key={`male-grid-${tick}`}
                           className="absolute top-0 h-full w-px bg-slate-300/60"
@@ -193,7 +197,7 @@ export default function PopulationPyramidPage() {
                 <div className="rounded-2xl border border-slate-100 bg-slate-50/70 px-2.5 py-2.5">
                   <div className="relative space-y-px">
                     <div className="pointer-events-none absolute inset-0">
-                      {populationPyramidTicks.map(tick => (
+                      {visiblePopulationTicks.map(tick => (
                         <span
                           key={`female-grid-${tick}`}
                           className="absolute top-0 h-full w-px bg-slate-300/60"
@@ -217,7 +221,7 @@ export default function PopulationPyramidPage() {
               <div className="mt-3 grid grid-cols-[1fr_56px_1fr] gap-2 text-xs text-gray-500">
                 <div className="h-6 px-2.5">
                   <div className="relative h-full">
-                    {[...populationPyramidTicks].reverse().map((tick, index, ticks) => (
+                    {[...visiblePopulationTicks].reverse().map((tick, index, ticks) => (
                       <span
                         key={`left-${tick}`}
                         className={`absolute ${getAxisTickClass(index, ticks.length)}`}
@@ -231,7 +235,7 @@ export default function PopulationPyramidPage() {
                 <div />
                 <div className="h-6 px-2.5">
                   <div className="relative h-full">
-                    {populationPyramidTicks.map((tick, index, ticks) => (
+                    {visiblePopulationTicks.map((tick, index, ticks) => (
                       <span
                         key={`right-${tick}`}
                         className={`absolute ${getAxisTickClass(index, ticks.length)}`}
