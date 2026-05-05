@@ -22,9 +22,9 @@ function formatPercentage(value: number) {
 }
 
 function getAxisTickClass(index: number, length: number) {
-  if (index === 0) return 'translate-x-0';
-  if (index === length - 1) return '-translate-x-full';
-  return '-translate-x-1/2';
+  if (index === 0) return 'w-12 translate-x-0 text-left';
+  if (index === length - 1) return 'w-12 -translate-x-full text-right';
+  return 'w-12 -translate-x-1/2 text-center';
 }
 
 export default function PopulationPyramidPage() {
@@ -53,6 +53,10 @@ export default function PopulationPyramidPage() {
   const displayRows = useMemo(
     () => (selectedSeries ? [...selectedSeries.rows].sort((a, b) => b.age - a.age) : []),
     [selectedSeries],
+  );
+  const visiblePopulationTicks = useMemo(
+    () => populationPyramidTicks.slice(0, -1),
+    [],
   );
 
   if (!selectedSeries) {
@@ -148,20 +152,23 @@ export default function PopulationPyramidPage() {
               <div className="grid grid-cols-[1fr_56px_1fr] gap-2 text-sm font-semibold text-gray-700">
                 <div className="text-right text-sky-800">Male</div>
                 <div className="text-center">Age</div>
-                <div className="text-left text-rose-800">Female</div>
+                <div className="text-left text-sky-800">Female</div>
               </div>
 
               <div className="mt-3 grid grid-cols-[1fr_56px_1fr] gap-2">
-                <div
-                  className="rounded-2xl border border-slate-100 bg-slate-50/70 px-2.5 py-2.5"
-                  style={{
-                    backgroundImage: 'linear-gradient(to right, rgba(148,163,184,0.18) 1px, transparent 1px)',
-                    backgroundSize: '25% 100%',
-                  }}
-                >
-                  <div className="space-y-px">
+                <div className="rounded-2xl border border-slate-100 bg-slate-50/70 px-2.5 py-2.5">
+                  <div className="relative space-y-px">
+                    <div className="pointer-events-none absolute inset-0">
+                      {visiblePopulationTicks.map(tick => (
+                        <span
+                          key={`male-grid-${tick}`}
+                          className="absolute top-0 h-full w-px bg-slate-300/60"
+                          style={{ left: `${100 - (tick / populationPyramidSideMax) * 100}%` }}
+                        />
+                      ))}
+                    </div>
                     {displayRows.map(row => (
-                      <div key={`male-${row.age}`} className="flex h-1 items-center justify-end">
+                      <div key={`male-${row.age}`} className="relative z-10 flex h-1 items-center justify-end">
                         <div
                           className="h-full rounded-l-sm bg-sky-800"
                           style={{ width: `${(row.male / populationPyramidSideMax) * 100}%` }}
@@ -187,18 +194,21 @@ export default function PopulationPyramidPage() {
                   </div>
                 </div>
 
-                <div
-                  className="rounded-2xl border border-slate-100 bg-slate-50/70 px-2.5 py-2.5"
-                  style={{
-                    backgroundImage: 'linear-gradient(to right, rgba(148,163,184,0.18) 1px, transparent 1px)',
-                    backgroundSize: '25% 100%',
-                  }}
-                >
-                  <div className="space-y-px">
+                <div className="rounded-2xl border border-slate-100 bg-slate-50/70 px-2.5 py-2.5">
+                  <div className="relative space-y-px">
+                    <div className="pointer-events-none absolute inset-0">
+                      {visiblePopulationTicks.map(tick => (
+                        <span
+                          key={`female-grid-${tick}`}
+                          className="absolute top-0 h-full w-px bg-slate-300/60"
+                          style={{ left: `${(tick / populationPyramidSideMax) * 100}%` }}
+                        />
+                      ))}
+                    </div>
                     {displayRows.map(row => (
-                      <div key={`female-${row.age}`} className="flex h-1 items-center">
+                      <div key={`female-${row.age}`} className="relative z-10 flex h-1 items-center">
                         <div
-                          className="h-full rounded-r-sm bg-rose-800"
+                          className="h-full rounded-r-sm bg-sky-800"
                           style={{ width: `${(row.female / populationPyramidSideMax) * 100}%` }}
                           title={`Female age ${row.age}: ${formatTotalPopulation(row.female)}`}
                         />
@@ -211,7 +221,7 @@ export default function PopulationPyramidPage() {
               <div className="mt-3 grid grid-cols-[1fr_56px_1fr] gap-2 text-xs text-gray-500">
                 <div className="h-6 px-2.5">
                   <div className="relative h-full">
-                    {[...populationPyramidTicks].reverse().map((tick, index, ticks) => (
+                    {[...visiblePopulationTicks].reverse().map((tick, index, ticks) => (
                       <span
                         key={`left-${tick}`}
                         className={`absolute ${getAxisTickClass(index, ticks.length)}`}
@@ -225,7 +235,7 @@ export default function PopulationPyramidPage() {
                 <div />
                 <div className="h-6 px-2.5">
                   <div className="relative h-full">
-                    {populationPyramidTicks.map((tick, index, ticks) => (
+                    {visiblePopulationTicks.map((tick, index, ticks) => (
                       <span
                         key={`right-${tick}`}
                         className={`absolute ${getAxisTickClass(index, ticks.length)}`}
@@ -235,17 +245,6 @@ export default function PopulationPyramidPage() {
                       </span>
                     ))}
                   </div>
-                </div>
-              </div>
-
-              <div className="mt-4 flex items-center justify-center gap-6 text-sm font-semibold text-gray-700">
-                <div className="flex items-center gap-2">
-                  <span className="h-4 w-4 rounded-full bg-sky-800" />
-                  Male
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="h-4 w-4 rounded-full bg-rose-800" />
-                  Female
                 </div>
               </div>
             </div>
@@ -269,6 +268,57 @@ export default function PopulationPyramidPage() {
               <span>{populationPyramidSeries[0]?.year}</span>
               <span>{populationPyramidSeries[Math.floor((populationPyramidSeries.length - 1) / 2)]?.year}</span>
               <span>{populationPyramidSeries[populationPyramidSeries.length - 1]?.year}</span>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      <Card>
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Social Connection Among Older Australians</h2>
+            <p className="mt-1 text-sm text-gray-500">
+              In 2022, among 4.2 million Australians aged 65 years and over living in households.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+              <p className="text-2xl font-bold text-sky-800">75.7%</p>
+              <p className="mt-1 text-sm text-gray-700">
+                Saw family or friends outside their home at least once per week in the previous 3 months.
+              </p>
+            </div>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+              <p className="text-2xl font-bold text-sky-800">96.8%</p>
+              <p className="mt-1 text-sm text-gray-700">
+                Had non-visit contact with family or friends outside their household.
+              </p>
+            </div>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+              <p className="text-2xl font-bold text-sky-800">91.7%</p>
+              <p className="mt-1 text-sm text-gray-700">
+                Reported support was available in a time of crisis from someone outside their household.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <div>
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Contact Patterns</h3>
+              <ul className="mt-3 space-y-2 text-sm text-gray-700">
+                <li>36.4% wanted more contact with family or friends living outside their household.</li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Participation And Barriers</h3>
+              <ul className="mt-3 space-y-2 text-sm text-gray-700">
+                <li>77.7% were satisfied with social and community participation all or most of the time.</li>
+                <li>85.3% said they leave their home as often as they would like.</li>
+                <li>44.0% reported barriers to social and community activities in the previous 3 months.</li>
+                <li>Common barriers: COVID-19 related reasons (53.1%), own condition or old age (34.6%), cost (25.2%), and being too busy or having no time (14.2%).</li>
+              </ul>
             </div>
           </div>
         </div>
