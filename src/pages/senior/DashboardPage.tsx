@@ -1,14 +1,35 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Clapperboard, Phone, Map, HelpCircle,
-  Sun, Moon, CloudRain, CloudSnow, Cloud, AlertTriangle, BarChart3
+  Activity, Clapperboard, Map, HelpCircle,
+  Sun, Moon, CloudRain, CloudSnow, Cloud, AlertTriangle, BarChart3, CloudSun, MapPin
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { supabase } from '../../lib/supabase';
 import Card from '../../components/ui/Card';
 import { buildHeatAdvisory, fetchCurrentWeather, getUserCoordinatesOrFallback, type WeatherData } from '../../lib/weather';
-import type { EmergencyContact } from '../../types';
+
+const featureHighlights = [
+  {
+    icon: MapPin,
+    title: 'Community Map',
+    description: 'Find nearby health, food, housing, transport, library, and community support services.',
+  },
+  {
+    icon: CloudSun,
+    title: 'Weather & Heat Safety',
+    description: 'Check local weather guidance and discover cooler indoor places during hot conditions.',
+  },
+  {
+    icon: Activity,
+    title: 'Wellbeing Activities',
+    description: 'Access gentle exercise resources and entertainment options designed for older adults.',
+  },
+  {
+    icon: BarChart3,
+    title: 'Population Insights',
+    description: 'Explore ageing population trends that help explain community support needs.',
+  },
+];
 
 function getWeatherIcon(code: number, isDay: boolean) {
   if (code <= 1) {
@@ -23,24 +44,11 @@ function getWeatherIcon(code: number, isDay: boolean) {
 }
 
 export default function DashboardPage() {
-  const { profile, user } = useAuth();
-  const [primaryContact, setPrimaryContact] = useState<EmergencyContact | null>(null);
+  const { profile } = useAuth();
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [usedWeatherFallback, setUsedWeatherFallback] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      supabase
-        .from('emergency_contacts')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('is_primary', true)
-        .maybeSingle()
-        .then(({ data }) => setPrimaryContact(data));
-    } else {
-      setPrimaryContact(null);
-    }
-
     let cancelled = false;
 
     getUserCoordinatesOrFallback()
@@ -61,7 +69,7 @@ export default function DashboardPage() {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, []);
 
   const greeting = (() => {
     const h = new Date().getHours();
@@ -100,29 +108,6 @@ export default function DashboardPage() {
             </div>
           </Card>
         )}
-
-        {/* <Card>
-          <h3 className="font-semibold text-gray-900 mb-4">Quick Call</h3>
-          {primaryContact ? (
-            <div className="space-y-3">
-              <div>
-                <p className="font-medium text-gray-900">{primaryContact.contact_name}</p>
-                <p className="text-sm text-gray-500">{primaryContact.relationship}</p>
-              </div>
-              <a
-                href={`tel:${primaryContact.phone_number}`}
-                className="flex items-center justify-center gap-2 w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-lg font-semibold transition-colors"
-              >
-                <Phone className="w-6 h-6" />
-                Call {primaryContact.contact_name}
-              </a>
-            </div>
-          ) : (
-            <div className="text-center py-4">
-              <p className="text-sm text-gray-500">No primary contact available right now.</p>
-            </div>
-          )}
-        </Card> */}
 
         {weather && (
           <Card className={weatherCardTone}>
@@ -220,6 +205,30 @@ export default function DashboardPage() {
           </Link>
         ))}
       </div>
+
+      <Card className="border-teal-100 bg-teal-50/40">
+        <div className="grid gap-6 lg:grid-cols-[1.1fr_1.6fr] lg:items-start">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">About SafeConnect</h2>
+            <p className="mt-3 text-sm leading-6 text-gray-600">
+              SafeConnect helps older adults find nearby services, plan visits, respond to weather risks,
+              and access practical wellbeing resources in one calm digital experience.
+            </p>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            {featureHighlights.map(feature => (
+              <div key={feature.title} className="rounded-2xl border border-white/80 bg-white p-4 shadow-sm">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-50 text-teal-700">
+                  <feature.icon className="h-5 w-5" />
+                </div>
+                <h3 className="mt-3 text-sm font-semibold text-gray-900">{feature.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-gray-600">{feature.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Card>
     </div>
   );
 }

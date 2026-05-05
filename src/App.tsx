@@ -2,7 +2,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { AccessibilityProvider } from './contexts/AccessibilityContext';
 import PasswordGate from './components/PasswordGate';
-import IntroductionPage from './pages/IntroductionPage';
 import SeniorLayout from './layouts/SeniorLayout';
 import WorkerLayout from './layouts/WorkerLayout';
 import DashboardPage from './pages/senior/DashboardPage';
@@ -25,7 +24,7 @@ import ReportsPage from './pages/worker/ReportsPage';
 function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<IntroductionPage />} />
+      <Route path="/" element={<Navigate to="/senior" replace />} />
       <Route path="/login" element={<Navigate to="/senior" replace />} />
       <Route path="/register" element={<Navigate to="/senior" replace />} />
 
