@@ -223,11 +223,11 @@ export default function AIAssistantFloatingButton() {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-3 text-sm font-semibold text-white shadow-lg transition-colors hover:bg-teal-700"
+          className="inline-flex h-12 w-12 items-center justify-center rounded-lg bg-teal-600 text-sm font-semibold text-white shadow-lg transition-colors hover:bg-teal-700 sm:h-auto sm:w-auto sm:gap-2 sm:px-4 sm:py-3"
           aria-label="Open AI help"
         >
           <MessageCircleQuestion className="h-5 w-5" />
-          <span>Ask for help</span>
+          <span className="hidden sm:inline">Ask for help</span>
         </button>
       )}
     </div>

@@ -1,5 +1,5 @@
 import { Outlet, NavLink } from 'react-router-dom';
-import { Clapperboard, Dumbbell, Home, Map, HelpCircle, Settings, BarChart3 } from 'lucide-react';
+import { Dumbbell, Home, Map, HelpCircle, Settings, Snowflake } from 'lucide-react';
 import { useState } from 'react';
 import { useAccessibility } from '../contexts/AccessibilityContext';
 import Modal from '../components/ui/Modal';
@@ -7,10 +7,9 @@ import AIAssistantFloatingButton from '../components/AIAssistantFloatingButton';
 
 const navItems = [
   { to: '/senior', icon: Home, label: 'Home', end: true },
-  { to: '/senior/entertainment', icon: Clapperboard, label: 'Entertainment', end: false },
   { to: '/senior/map', icon: Map, label: 'Map', end: false },
+  { to: '/senior/air-conditioned-indoor', icon: Snowflake, label: 'Air-conditioned indoor', mobileLabel: 'Indoor AC', end: false },
   { to: '/senior/exercise', icon: Dumbbell, label: 'Exercise', end: false },
-  { to: '/senior/population', icon: BarChart3, label: 'Population', end: false },
   { to: '/senior/help', icon: HelpCircle, label: 'Help', end: false },
 ];
 
@@ -20,17 +19,17 @@ export default function SeniorLayout() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <header className="bg-white border-b border-gray-200 px-4 py-3 hidden md:flex items-center justify-between">
-        <div className="flex items-center gap-8">
-          <h1 className="text-xl font-bold text-teal-700">SafeConnect</h1>
-          <nav className="flex items-center gap-1">
+      <header className="bg-white border-b border-gray-200 px-4 py-3 hidden md:flex items-center justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-4 lg:gap-8">
+          <h1 className="shrink-0 text-xl font-bold text-teal-700">SafeConnect</h1>
+          <nav className="flex min-w-0 items-center gap-1 overflow-x-auto">
             {navItems.map(item => (
               <NavLink
                 key={item.to}
                 to={item.to}
                 end={item.end}
                 className={({ isActive }) =>
-                  `flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                  `flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition-colors lg:px-4 ${
                     isActive
                       ? 'bg-teal-50 text-teal-700'
                       : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
@@ -43,7 +42,7 @@ export default function SeniorLayout() {
             ))}
           </nav>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-3">
           <button
             onClick={() => setSettingsOpen(true)}
             className="p-2 rounded-xl hover:bg-gray-100 text-gray-500 transition-colors"
@@ -58,28 +57,28 @@ export default function SeniorLayout() {
         <Outlet />
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex md:hidden z-40">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex md:hidden z-40 overflow-x-auto">
         {navItems.map(item => (
           <NavLink
             key={item.to}
             to={item.to}
             end={item.end}
             className={({ isActive }) =>
-              `flex-1 flex flex-col items-center gap-1 py-3 text-xs font-medium transition-colors ${
+              `flex min-w-[4.5rem] flex-1 flex-col items-center gap-1 px-1 py-2.5 text-[10px] font-medium transition-colors ${
                 isActive ? 'text-teal-700' : 'text-gray-400'
               }`
             }
           >
-            <item.icon className="w-6 h-6" />
-            {item.label}
+            <item.icon className="h-5 w-5" />
+            <span className="max-w-full truncate">{item.mobileLabel ?? item.label}</span>
           </NavLink>
         ))}
         <button
           onClick={() => setSettingsOpen(true)}
-          className="flex-1 flex flex-col items-center gap-1 py-3 text-xs font-medium text-gray-400"
+          className="flex min-w-[4.5rem] flex-1 flex-col items-center gap-1 px-1 py-2.5 text-[10px] font-medium text-gray-400"
         >
-          <Settings className="w-6 h-6" />
-          Settings
+          <Settings className="h-5 w-5" />
+          <span className="max-w-full truncate">Settings</span>
         </button>
       </nav>
 

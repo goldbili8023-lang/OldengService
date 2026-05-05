@@ -14,6 +14,7 @@ import MapPage from './pages/senior/MapPage';
 import ExercisePage from './pages/senior/ExercisePage';
 import HelpPage from './pages/senior/HelpPage';
 import PopulationPyramidPage from './pages/senior/PopulationPyramidPage';
+import AirConditionedIndoorPage from './pages/senior/AirConditionedIndoorPage';
 import WorkerDashboard from './pages/worker/WorkerDashboard';
 import DirectoryPage from './pages/worker/DirectoryPage';
 import WorkerMapPage from './pages/worker/WorkerMapPage';
@@ -35,6 +36,7 @@ function AppRoutes() {
         <Route path="heat-safe" element={<HeatSafePage />} />
         <Route path="medications" element={<MedicationsPage />} />
         <Route path="map" element={<MapPage />} />
+        <Route path="air-conditioned-indoor" element={<AirConditionedIndoorPage />} />
         <Route path="exercise" element={<ExercisePage />} />
         <Route path="help" element={<HelpPage />} />
         <Route path="population" element={<PopulationPyramidPage />} />
