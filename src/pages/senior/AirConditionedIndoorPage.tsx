@@ -210,7 +210,6 @@ export default function AirConditionedIndoorPage() {
 
   const goToMap = (location: ServiceLocation, includeDirections = false) => {
     const params = new URLSearchParams({
-      preset: 'heat-safe',
       selected: location.id,
     });
 
@@ -303,7 +302,7 @@ export default function AirConditionedIndoorPage() {
             title="No air-conditioned indoor places found"
             description="Try the full map to browse more libraries and community centres near Melbourne."
             action={(
-              <Button type="button" onClick={() => navigate('/senior/map?preset=heat-safe')}>
+              <Button type="button" onClick={() => navigate('/senior/map')}>
                 See all on map
               </Button>
             )}
@@ -419,11 +418,11 @@ export default function AirConditionedIndoorPage() {
           <div>
             <h2 className="text-lg font-semibold text-gray-900">Need more choices?</h2>
             <p className="mt-1 text-sm text-gray-600">
-              Browse the full map for more libraries and community centres, including places a little further away.
+              Browse the full map for all services, including places a little further away.
             </p>
           </div>
-          <Button type="button" variant="secondary" onClick={() => navigate('/senior/map?preset=heat-safe')}>
-            Browse all indoor places
+          <Button type="button" variant="secondary" onClick={() => navigate('/senior/map')}>
+            Browse full map
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </div>

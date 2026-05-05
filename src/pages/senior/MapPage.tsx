@@ -543,6 +543,8 @@ export default function MapPage() {
   ]);
 
   useEffect(() => {
+    if (queryOpensTransport && querySelectedLocationId === selectedLocation?.id) return;
+
     setTransportPanelOpen(false);
     setTransportLoading(false);
     setWalkingRoute(null);
@@ -551,7 +553,7 @@ export default function MapPage() {
     setTransitLinesError('');
     setTransportTargetLocationId(null);
     transportRequestKeyRef.current = '';
-  }, [selectedLocation?.id]);
+  }, [queryOpensTransport, querySelectedLocationId, selectedLocation?.id]);
 
   useEffect(() => {
     if (!transportPanelOpen || !selectedLocation || !userLocation) return;
