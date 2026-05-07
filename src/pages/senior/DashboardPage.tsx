@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Activity, Clapperboard, Map, HelpCircle,
+  Activity, Clapperboard, Map, HelpCircle, Dumbbell, ArrowRight,
   Sun, Moon, CloudRain, CloudSnow, Cloud, AlertTriangle, BarChart3, CloudSun, MapPin
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -28,6 +28,72 @@ const featureHighlights = [
     icon: BarChart3,
     title: 'Population Insights',
     description: 'Explore ageing population trends that help explain community support needs.',
+  },
+];
+
+const olderAustraliansStats = [
+  {
+    value: 27.6,
+    label: 'Live alone',
+    description: 'Older adults living in lone person households may need easier ways to stay connected and supported.',
+    color: 'bg-sky-500',
+  },
+  {
+    value: 24.3,
+    label: 'Miss weekly visits',
+    description: 'Nearly one in four had not seen family or friends outside home at least weekly in the previous 3 months.',
+    color: 'bg-amber-500',
+  },
+  {
+    value: 22.3,
+    label: 'Less often satisfied',
+    description: 'More than one in five are not always satisfied with levels of social and community participation.',
+    color: 'bg-rose-500',
+  },
+  {
+    value: 36.4,
+    label: 'Want more contact',
+    description: 'Over a third said they would like more contact with family or friends outside their household.',
+    color: 'bg-teal-600',
+  },
+];
+
+const physicalActivityStats = [
+  {
+    value: 33.4,
+    label: 'Met guidelines',
+    description: 'One in three people aged 65 years or over met the physical activity guidelines in 2022.',
+    color: 'bg-emerald-600',
+  },
+  {
+    value: 30.8,
+    label: '30 minutes daily',
+    description: 'Three in ten completed at least 30 minutes of physical activity daily.',
+    color: 'bg-sky-500',
+  },
+  {
+    value: 37.6,
+    label: '300+ minutes weekly',
+    description: 'One in three did more than 300 minutes of physical activity in the last week.',
+    color: 'bg-violet-500',
+  },
+];
+
+const extremeHeatStats = [
+  {
+    value: '7,104',
+    label: 'Injury hospitalisations',
+    description: 'Extreme heat accounted for 7,104 injury hospitalisations in Australia over the 10 years from July 2012 to June 2022.',
+  },
+  {
+    value: '293',
+    label: 'Deaths',
+    description: 'Extreme heat accounted for 293 deaths in Australia from July 2012 to June 2022.',
+  },
+  {
+    value: '65+',
+    label: 'Most commonly hospitalised',
+    description: 'From July 2019 to June 2022, people aged 65 and over were the most commonly hospitalised cohort for heat-related injuries.',
   },
 ];
 
@@ -229,6 +295,138 @@ export default function DashboardPage() {
           </div>
         </div>
       </Card>
+
+      <section className="rounded-2xl border border-emerald-100 bg-white p-6 shadow-sm md:p-8">
+        <div>
+          <div className="max-w-3xl">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+              <MapPin className="h-6 w-6" />
+            </div>
+            <p className="mt-4 text-sm font-semibold uppercase tracking-wide text-emerald-700">2022 social connection snapshot</p>
+            <h2 className="mt-3 text-2xl font-bold text-gray-900 md:text-3xl">
+              Connection matters for healthy ageing.
+            </h2>
+            <p className="mt-4 text-sm leading-6 text-gray-600 md:text-base">
+              Among people aged 65 years and over living in households, the data highlights the ongoing risk of
+              social isolation and the importance of accessible community support.
+            </p>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <Link
+                to="/senior/map"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700"
+              >
+                <MapPin className="h-4 w-4" />
+                Find nearby places
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-8">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {olderAustraliansStats.map(stat => (
+              <div key={stat.label} className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <h3 className="text-sm font-semibold text-gray-900">{stat.label}</h3>
+                  <p className="shrink-0 text-2xl font-bold text-gray-900">{stat.value.toFixed(1)}%</p>
+                </div>
+                <div className="mt-3 h-3 overflow-hidden rounded-full bg-gray-200/80 ring-1 ring-gray-300/60">
+                  <div
+                    className={`h-full rounded-full shadow-sm ${stat.color}`}
+                    style={{ width: `${stat.value}%` }}
+                    aria-hidden="true"
+                  />
+                </div>
+                <p className="mt-3 text-sm leading-6 text-gray-600">{stat.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-emerald-100 bg-white p-6 shadow-sm md:p-8">
+        <div className="max-w-3xl">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+              <Activity className="h-6 w-6" />
+            </div>
+            <h2 className="mt-4 text-2xl font-bold text-gray-900 md:text-3xl">
+              Movement can help reduce social isolation.
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-gray-600 md:text-base">
+              Moderate physical activity, 3-5 days a week, reduces social isolation by 15%-30%.
+            </p>
+            <div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
+              <p className="text-sm font-semibold text-emerald-900">Physical activity guidelines for older people (65 years and over)</p>
+              <p className="mt-1 text-sm leading-6 text-emerald-800">
+                30 minutes or more of physical activity on most, preferably all, days.
+              </p>
+            </div>
+            <Link
+              to="/senior/exercise"
+              className="mt-6 inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700"
+            >
+              <Dumbbell className="h-4 w-4" />
+              Try gentle exercise
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+        </div>
+
+        <div className="mt-8 grid gap-4 md:grid-cols-3">
+          {physicalActivityStats.map(stat => (
+            <div key={stat.label} className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <h3 className="text-sm font-semibold text-gray-900">{stat.label}</h3>
+                <p className="shrink-0 text-2xl font-bold text-gray-900">{stat.value.toFixed(1)}%</p>
+              </div>
+              <div className="mt-3 h-3 overflow-hidden rounded-full bg-gray-200/80 ring-1 ring-gray-300/60">
+                <div
+                  className={`h-full rounded-full shadow-sm ${stat.color}`}
+                  style={{ width: `${stat.value}%` }}
+                  aria-hidden="true"
+                />
+              </div>
+              <p className="mt-3 text-sm leading-6 text-gray-600">{stat.description}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-emerald-100 bg-white p-6 shadow-sm md:p-8">
+        <div className="max-w-3xl">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+            <Sun className="h-6 w-6" />
+          </div>
+          <p className="mt-4 text-sm font-semibold uppercase tracking-wide text-emerald-700">Extreme heat safety</p>
+          <h2 className="mt-3 text-2xl font-bold text-gray-900 md:text-3xl">
+            Cooler indoor places can reduce heat exposure.
+          </h2>
+          <p className="mt-4 text-sm leading-6 text-gray-600 md:text-base">
+            Very high temperatures affect people differently, and frail older people are at higher risk of
+            hospitalisation and even death when exposed to extreme heat.
+          </p>
+          <Link
+            to="/senior/air-conditioned-indoor"
+            className="mt-6 inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700"
+          >
+            <CloudSnow className="h-4 w-4" />
+            Find air-conditioned places
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+
+        <div className="mt-8 grid gap-4 md:grid-cols-3">
+          {extremeHeatStats.map(stat => (
+            <div key={stat.label} className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+              <div className="flex min-h-[4.5rem] flex-col justify-between gap-2">
+                <h3 className="text-sm font-semibold text-gray-900">{stat.label}</h3>
+                <p className="text-2xl font-bold leading-tight text-gray-900">{stat.value}</p>
+              </div>
+              <p className="mt-3 text-sm leading-6 text-gray-600">{stat.description}</p>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
