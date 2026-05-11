@@ -287,10 +287,9 @@ export default function DashboardPage() {
         )}
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         {[
           { to: '/senior/map', icon: Map, label: 'Nearby Services', color: 'bg-sky-100 text-sky-700' },
-          { to: '/senior/population', icon: BarChart3, label: 'Population', color: 'bg-indigo-100 text-indigo-700' },
           { to: '/senior/clothing-advice', icon: Shirt, label: 'Clothing Advice', color: 'bg-amber-100 text-amber-700' },
           { to: '/senior/help', icon: HelpCircle, label: 'How to Use', color: 'bg-teal-100 text-teal-700' },
         ].map(item => (
