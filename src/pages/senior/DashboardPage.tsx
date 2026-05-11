@@ -1,12 +1,20 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Activity, Map, HelpCircle, Dumbbell, ArrowRight,
+  Activity, Map, HelpCircle, Dumbbell, ArrowRight, Shirt,
   Sun, Moon, CloudRain, CloudSnow, Cloud, AlertTriangle, BarChart3, CloudSun, MapPin
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import Card from '../../components/ui/Card';
+import { buildClothingAdvice, type ClothingAdvice } from '../../lib/clothingAdvice';
 import { buildHeatAdvisory, fetchCurrentWeather, getUserCoordinatesOrFallback, type WeatherData } from '../../lib/weather';
+
+const clothingToneClasses: Record<ClothingAdvice['tone'], string> = {
+  sky: 'border-sky-200 bg-sky-50',
+  teal: 'border-teal-200 bg-teal-50',
+  amber: 'border-amber-200 bg-amber-50',
+  red: 'border-red-200 bg-red-50',
+};
 
 const featureHighlights = [
   {
@@ -145,6 +153,7 @@ export default function DashboardPage() {
   })();
   const severeWeather = weather ? weather.code >= 80 : false;
   const heatAdvisory = weather ? buildHeatAdvisory(weather.temp) : null;
+  const clothingAdvice = weather ? buildClothingAdvice(weather) : null;
   const weatherCardTone = heatAdvisory?.level === 'hot'
     ? 'border-red-200 bg-red-50'
     : heatAdvisory?.level === 'warm'
@@ -239,6 +248,32 @@ export default function DashboardPage() {
           </Card>
         )}
 
+        <Card className={clothingAdvice ? clothingToneClasses[clothingAdvice.tone] : ''}>
+          <div className="flex h-full flex-col justify-between gap-5">
+            <div>
+              <div className="flex items-center gap-3">
+                <div className="rounded-xl bg-white/80 p-2 text-teal-700">
+                  <Shirt className="h-5 w-5" />
+                </div>
+                <h3 className="font-semibold text-gray-900">What to wear today</h3>
+              </div>
+              <p className="mt-4 text-base font-semibold text-gray-900">
+                {clothingAdvice?.headline ?? 'Wear removable layers'}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-gray-600">
+                {clothingAdvice?.summary ?? 'Check the forecast and wear removable layers before going out.'}
+              </p>
+            </div>
+
+            <Link
+              to="/senior/clothing-advice"
+              className="inline-flex w-fit items-center rounded-xl bg-teal-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-teal-700"
+            >
+              See clothing advice
+            </Link>
+          </div>
+        </Card>
+
         {heatAdvisory?.level === 'hot' && !severeWeather && (
           <Card className="md:col-span-2 border-red-200 bg-red-50">
             <div className="flex items-start gap-3">
@@ -252,10 +287,11 @@ export default function DashboardPage() {
         )}
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
           { to: '/senior/map', icon: Map, label: 'Nearby Services', color: 'bg-sky-100 text-sky-700' },
           { to: '/senior/population', icon: BarChart3, label: 'Population', color: 'bg-indigo-100 text-indigo-700' },
+          { to: '/senior/clothing-advice', icon: Shirt, label: 'Clothing Advice', color: 'bg-amber-100 text-amber-700' },
           { to: '/senior/help', icon: HelpCircle, label: 'How to Use', color: 'bg-teal-100 text-teal-700' },
         ].map(item => (
           <Link

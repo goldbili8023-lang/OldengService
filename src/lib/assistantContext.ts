@@ -58,6 +58,15 @@ const PAGE_HINTS = [
     ],
   },
   {
+    test: (pagePath: string) => pagePath.startsWith('/senior/clothing-advice'),
+    hint: 'Clothing Advice suggests what to wear before going outside based on the current temperature and weather.',
+    prompts: [
+      'What should I wear today?',
+      'Do I need sun protection?',
+      'What should I bring if it rains?',
+    ],
+  },
+  {
     test: (pagePath: string) => pagePath.startsWith('/senior/help'),
     hint: 'Help gives short guides for common tasks in SafeConnect.',
     prompts: [
