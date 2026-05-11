@@ -113,7 +113,7 @@ export default function AIAssistantFloatingButton() {
   return (
     <div className="fixed bottom-24 right-4 z-30 md:bottom-6 md:right-6">
       {open ? (
-        <div className="flex max-h-[calc(100dvh-7rem)] w-[min(22rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl md:max-h-[calc(100dvh-3rem)]">
+        <div className="flex h-[min(34rem,calc(100dvh-7rem))] w-[min(22rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl md:h-[min(38rem,calc(100dvh-3rem))]">
           <div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-100 px-4 py-3">
             <div className="min-w-0">
               <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
