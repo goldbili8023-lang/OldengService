@@ -43,33 +43,33 @@ export function buildClothingAdvice(weather: WeatherData): ClothingAdvice {
       protection: [],
       tone: 'sky',
     };
-  } else if (temp < 12) {
+  } else if (temp < 13) {
     advice = {
       level: 'cold',
       headline: 'Wear a warm outer layer',
-      summary: 'It is cool enough for a warm jacket and covered clothing.',
-      items: ['Warm jacket', 'Long pants', 'Closed shoes', 'Light scarf if you feel the cold'],
-      tips: ['Bring one extra layer in case the wind picks up.', 'Choose shoes with steady grip.'],
+      summary: 'This temperature can feel cold for older adults. Wear a warm jacket and covered clothing.',
+      items: ['Warm jacket or fleece', 'Long-sleeve top', 'Long pants', 'Closed walking shoes'],
+      tips: ['Bring one extra warm layer in case the wind picks up.', 'Choose shoes with steady grip.'],
       protection: [],
       tone: 'sky',
     };
   } else if (temp < 18) {
     advice = {
       level: 'cool',
-      headline: 'Choose light layers',
-      summary: 'A light jacket or cardigan can help you stay comfortable as the temperature changes.',
-      items: ['Light jacket or cardigan', 'Comfortable top', 'Long pants or warm trousers'],
-      tips: ['Wear layers you can remove indoors.', 'Carry a small outer layer if you will be out late.'],
+      headline: 'Wear a jacket and removable layers',
+      summary: 'The air is still cool. Start with a jacket or cardigan and remove layers if you get warm indoors.',
+      items: ['Light warm jacket or cardigan', 'Long-sleeve top or thin sweater', 'Long pants', 'Closed walking shoes'],
+      tips: ['Keep your outer layer on if it is windy.', 'Carry a small warm layer if you will be out late.'],
       protection: [],
       tone: 'teal',
     };
   } else if (temp < 25) {
     advice = {
       level: 'mild',
-      headline: 'Comfortable light clothing',
-      summary: 'The weather is mild. Light layers should be enough for most short trips.',
-      items: ['Comfortable light layers', 'Breathable top', 'Comfortable walking shoes'],
-      tips: ['Bring a light layer if you will be out into the evening.', 'Check the sky before leaving.'],
+      headline: 'Wear comfortable layers',
+      summary: 'The weather is mild. A breathable outfit with one removable layer should be comfortable.',
+      items: ['Comfortable breathable clothing', 'Light cardigan or overshirt', 'Comfortable walking shoes'],
+      tips: ['Bring the light layer if you will be out into the evening.', 'Check the sky before leaving.'],
       protection: [],
       tone: 'teal',
     };

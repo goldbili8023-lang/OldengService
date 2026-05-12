@@ -57,8 +57,8 @@ export function buildHeatAdvisory(temperatureC: number): HeatAdvisory {
   return {
     level,
     temperatureC,
-    headline: 'Comfortable weather',
-    body: 'No heat concern right now.',
+    headline: 'No heat alert',
+    body: 'No heat concern right now. Dress for the temperature before going out.',
     showIndoorSuggestions: false,
     ctaLabel: null,
   };
