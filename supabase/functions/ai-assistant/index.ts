@@ -36,6 +36,17 @@ interface GeminiResponsePayload {
 }
 
 const DEFAULT_GEMINI_MODEL = 'gemini-3-flash-preview';
+const ASSISTANT_REPLY_FORMAT_INSTRUCTIONS = [
+  'Reply in English unless the user clearly asks for another language.',
+  'Use compact plain-text sections only.',
+  'Prefer this template: Answer: one short direct answer. Next step: tap "Button name" or open "Page name". Note: one safety or limitation note when needed.',
+  'You may omit Next step or Note when they are not useful.',
+  'Only use these section headings: Answer:, Next step:, Note:, Places to check:.',
+  'Do not use Markdown, asterisks, bold text, bullet markers, numbered Markdown lists, # headings, backticks, Markdown links, emoji, or decorative formatting.',
+  'Use double quotes for app buttons, page names, and clickable text, for example Tap "Map" or Press "Send".',
+  'Keep each section to 1 or 2 short sentences. Aim for 45 to 90 words total.',
+  'If steps are needed, use at most 3 short plain-text lines.',
+].join(' ');
 
 function getGeminiErrorMessage(statusCode: number, payload: GeminiResponsePayload): string {
   const errorStatus = payload.error?.status ?? '';
@@ -62,6 +73,10 @@ function getPageContext(pagePath: string): string {
 
   if (pagePath.startsWith('/senior/help')) {
     return 'The help page offers short step-by-step guides for common tasks inside SafeConnect.';
+  }
+
+  if (pagePath.startsWith('/senior/clothing-advice')) {
+    return 'The clothing advice page gives practical clothing suggestions based on current temperature and weather.';
   }
 
   if (pagePath.startsWith('/senior/contacts')) {
@@ -165,6 +180,7 @@ Deno.serve(async req => {
                   'Use simple language and short steps.',
                   'You may help with app usage, map search, public service information, and transport guidance inside SafeConnect.',
                   'Use only the public service context provided in the prompt when naming services.',
+                  ASSISTANT_REPLY_FORMAT_INSTRUCTIONS,
                   'Do not claim to see private contacts, medications, profiles, or any hidden data.',
                   'Do not give medical diagnosis, legal advice, or emergency judgement.',
                   'If the user sounds unsafe or in urgent danger, tell them to contact emergency services or a trusted person right away.',

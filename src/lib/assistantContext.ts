@@ -88,8 +88,8 @@ const PAGE_HINTS = [
     test: () => true,
     hint: 'Home shows weather, quick access to key pages, and local support summaries.',
     prompts: [
-      'How do I open Entertainment?',
       'How do I find nearby services?',
+      'What should I wear today?',
       'What can I do on the home page?',
     ],
   },

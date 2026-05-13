@@ -2,6 +2,7 @@ import { Loader2, MessageCircleQuestion, SendHorizontal, Sparkles, X } from 'luc
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { fetchAssistantReply, type AssistantChatMessage } from '../lib/aiAssistant';
+import { normalizeAssistantReply } from '../lib/assistantReplyFormat';
 import {
   getAssistantPageHint,
   getAssistantStarterQuestions,
@@ -15,7 +16,7 @@ interface ChatMessage extends AssistantChatMessage {
 const INITIAL_MESSAGE: ChatMessage = {
   id: 'assistant-welcome',
   role: 'assistant',
-  content: 'I can help with maps, entertainment, transport, and simple SafeConnect steps. Ask a question any time.',
+  content: 'Answer:\nI can help with SafeConnect services, weather, clothing advice, maps, and help steps.\n\nNext step:\nAsk a short question, or tap one of the suggested questions below.',
 };
 
 function buildMessageId(prefix: string) {
@@ -82,8 +83,9 @@ export default function AIAssistantFloatingButton() {
         },
       ]);
     } catch (error) {
-      const nextErrorMessage =
-        error instanceof Error ? error.message : 'AI help is unavailable right now. Please try again in a moment.';
+      const nextErrorMessage = normalizeAssistantReply(
+        error instanceof Error ? error.message : 'AI help is unavailable right now. Please try again in a moment.',
+      );
       setErrorMessage(nextErrorMessage);
       setMessages(prev => [
         ...prev,
@@ -197,7 +199,7 @@ export default function AIAssistantFloatingButton() {
                 value={inputValue}
                 onChange={event => setInputValue(event.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask about services, entertainment, the map, or transport..."
+                placeholder="Ask about services, weather, clothing advice, the map, or help..."
                 className="block w-full resize-none rounded-lg border-0 px-3 py-2 text-sm text-gray-700 outline-none placeholder:text-gray-400"
               />
             </div>

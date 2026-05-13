@@ -1,5 +1,6 @@
 import { supabaseAnonKey, supabaseUrl } from './supabase';
 import type { AssistantServiceMatch } from './assistantContext';
+import { normalizeAssistantReply } from './assistantReplyFormat';
 
 export interface AssistantChatMessage {
   role: 'user' | 'assistant';
@@ -14,21 +15,21 @@ interface AssistantRequest {
 }
 
 function getFriendlyErrorMessage(message: string): string {
-  if (!message) return 'AI help is unavailable right now. Please try again in a moment.';
+  if (!message) return normalizeAssistantReply('AI help is unavailable right now. Please try again in a moment.');
 
   if (message.includes('not configured')) {
-    return 'AI help is not configured yet.';
+    return normalizeAssistantReply('AI help is not configured yet.');
   }
 
-  return message;
+  return normalizeAssistantReply(message);
 }
 
 function getFetchErrorMessage(): string {
   if (import.meta.env.DEV) {
-    return 'AI help server is not reachable. Restart npm run dev so the local AI proxy can load your .env settings.';
+    return normalizeAssistantReply('AI help server is not reachable. Restart npm run dev so the local AI proxy can load your .env settings.');
   }
 
-  return 'AI help is unavailable right now. Please try again in a moment.';
+  return normalizeAssistantReply('AI help is unavailable right now. Please try again in a moment.');
 }
 
 export async function fetchAssistantReply({
@@ -95,5 +96,5 @@ export async function fetchAssistantReply({
     throw new Error('AI help is unavailable right now. Please try again in a moment.');
   }
 
-  return payload.answer.trim();
+  return normalizeAssistantReply(payload.answer);
 }
