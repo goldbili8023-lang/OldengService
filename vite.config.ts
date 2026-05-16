@@ -222,7 +222,7 @@ function createAiAssistantDevProxy(env: Record<string, string>): Plugin {
                 contents,
                 generationConfig: {
                   temperature: 0.4,
-                  maxOutputTokens: 420,
+                  maxOutputTokens: 900,
                 },
               }),
             },
