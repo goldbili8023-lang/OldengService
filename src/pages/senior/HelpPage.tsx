@@ -1,30 +1,17 @@
 import { useState } from 'react';
 import { useEffect } from 'react';
-import { ChevronDown, Clapperboard, Map, HelpCircle, Settings } from 'lucide-react';
+import { ChevronDown, Map, HelpCircle, Settings } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import Card from '../../components/ui/Card';
 import type { Tutorial } from '../../types';
 
 const featureIcons: Record<string, React.ElementType> = {
-  entertainment: Clapperboard,
   map: Map,
   help: HelpCircle,
   settings: Settings,
 };
 
 const defaultGuides = [
-  {
-    feature_name: 'entertainment',
-    title: 'How to Use Entertainment',
-    steps: [
-      'Go to the "Entertainment" tab in the navigation.',
-      'Leave it on "Short Videos" to browse public YouTube clips.',
-      'On a computer, use your mouse wheel near the viewer or press Next and Previous.',
-      'On a phone, swipe up or down inside the viewer to move through the feed.',
-      'Use the top switch to move between "Short Videos" and "Runner Game".',
-      'If a YouTube video does not load, tap "Open on YouTube" or move to the next clip.',
-    ],
-  },
   {
     feature_name: 'map',
     title: 'How to Find Nearby Services',
@@ -50,16 +37,8 @@ const defaultGuides = [
 
 const faqs = [
   {
-    q: 'Do I need a YouTube account to use Entertainment?',
-    a: 'No. SafeConnect uses public YouTube videos. Some browsers or networks may still block a few embeds.',
-  },
-  {
     q: 'What do the colored dots on the map mean?',
     a: 'Different colors represent different types of services: green for health, orange for food banks, blue for community centres, and so on.',
-  },
-  {
-    q: 'How do I switch between videos and the runner game?',
-    a: 'Open Entertainment and use the top buttons to switch between "Short Videos" and "Runner Game" at any time.',
   },
   {
     q: 'Is my information private?',
